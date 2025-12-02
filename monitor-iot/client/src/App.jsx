@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import MetricCard from './components/MetricCard';
-import Chart from './components/Chart';
-import AlertsPanel from './components/AlertsPanel';
-import WaterQualityMetrics from './components/WaterQualityMetrics';
-import SensorHealth from './components/SensorHealth';
-import SensorCard from './components/SensorCard';
 import './App.css';
+
+import CommandCenter from './pages/CommandCenter';
+import Reports from './pages/Reports';
+import Alerts from './pages/Alerts';
 
 function App() {
     const [sensors, setSensors] = useState([]);
@@ -175,6 +173,26 @@ function App() {
                 )}
             </div>
         </div>
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <div className="app">
+                <Sidebar />
+
+                <div className="main-content">
+                    <Header />
+                    <Routes>
+                        <Route path="/" element={<CommandCenter />} />
+                        <Route path="/reportes" element={<Reports />} />
+                        <Route path="/alertas" element={<Alerts />} />
+                        <Route path="*" element={<CommandCenter />} />
+                    </Routes>
+                </div>
+            </div>
+        </BrowserRouter>
     );
 }
 
