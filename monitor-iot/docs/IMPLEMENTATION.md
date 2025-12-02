@@ -11,148 +11,250 @@ Esta documentación describe la arquitectura del proyecto, qué hace cada pieza 
 ## Estructura del repositorio (resumen)
 ```
 /monitor-iot
-  /server
-    index.js            # Servidor Express con endpoints
-    package.json
-    simulator.js        # Script para simular sensores locales
-  /client
-    package.json
-    src/
-      App.jsx           # Lógica principal, polling y mapeo de sensores
-      components/       # Componentes UI (MetricCard, Chart, AlertsPanel, SensorCard, ...)
-  README.md
-  docs/IMPLEMENTATION.md
-```
+  ````markdown
+  # AquaVisor — Documentación de implementación (detallada)
 
-## API (Contract)
+  Este documento explica en detalle la arquitectura del proyecto, los contratos API, cómo ejecutar y probar localmente (con y sin hardware), estructura del frontend, decisiones de diseño y recomendaciones operativas.
 
-A. Ingesta — Endpoint para ESP32
-- Método: `POST`
-- Ruta: `/api/sensor-data`
-- Body (JSON EXACTO esperado):
+  Tabla de contenidos
+  - Resumen ejecutivo
+  - Arquitectura y flujo de datos
+  - API: contrato detallado (payloads, validaciones, respuestas)
+  - Backend: comportamiento y estructura del servidor
+  - Simulador (cómo usarlo y ejemplos)
+  - Frontend: estructura, componentes y comportamiento (polling)
+  - Ejemplos de conexión desde ESP32 (código de ejemplo)
+  - Comandos útiles y cómo ejecutar el proyecto
+  - Pruebas y debugging
+  - Mejoras y hoja de ruta
 
-```json
-{
-  "sensor_id": "1",
-  "caudal_min": "12",
-  "total_acumulado": "120.5",
-  "hora": "2025-11-30 08:30:30"
-}
-```
+  ---
 
-- Comportamiento:
-  - El servidor valida la presencia de `sensor_id`, `caudal_min`, `total_acumulado` y `hora`.
-  - Convierte `caudal_min` y `total_acumulado` con `parseFloat` y rechaza con `400` si no son numéricos.
-  - Guarda o actualiza el sensor en un objeto JS en memoria usando `sensor_id` como clave única.
+  ## Resumen ejecutivo
+
+  - Backend: Node.js con Express, expone API REST en `http://<host>:4000`.
+  - Frontend: React con Vite en `monitor-iot/client`, consume `GET /api/dashboard` periódicamente (polling 3s) y renderiza el dashboard.
+  - Persistencia actual: memoria en proceso (útil para desarrollo). No apta para producción.
+  - Simulador: script `monitor-iot/server/simulator.js` para generar tráfico de prueba.
+
+  ## Arquitectura y flujo de datos
+
+  1. El ESP32 (o el simulador) envía un POST JSON a `/api/sensor-data` con la lectura del sensor.
+  2. El backend valida y guarda/actualiza el registro del sensor en memoria.
+  3. El frontend realiza polling a `/api/dashboard` cada 3 segundos para obtener el estado agregado y actualizar la UI (SensorCards, métricas, alertas).
+
+  El objetivo de esta arquitectura es simplicidad y facilidad de desarrollo local. Para producción recomendamos reemplazar el almacenamiento en memoria por una base de datos y usar WebSockets para push en tiempo real.
+
+  ## API — Contrato detallado
+
+  1) POST /api/sensor-data
+  - Descripción: endpoint de ingestión de lecturas desde sensores (ESP32) o simulador.
+  - Content-Type: `application/json`
+  - Body esperado (ejemplo):
+
+  ```json
+  {
+    "sensor_id": "1",               // string: identificador único del sensor
+    "caudal_min": "12",             // string o number: caudal instantáneo (se parsea a número)
+    "total_acumulado": "120.5",     // string o number: acumulado (se parsea a número)
+    "hora": "2025-12-02 10:00:00"   // string: marca de tiempo legible (se guarda tal cual)
+  }
+  ```
+
+  - Reglas y validación:
+    - `sensor_id`: requerido, no vacío.
+    - `caudal_min` y `total_acumulado`: se aceptan como strings o numbers, pero el servidor hace `parseFloat`. Si `parseFloat` resulta en `NaN` -> responde `400`.
+    - `hora`: requerido (formato libre), recomendado ISO-8601 o `YYYY-MM-DD HH:mm:ss`.
+
   - Respuestas:
-    - `200` — `{ success: true, message: 'Datos recibidos correctamente', data: { ... } }`.
-    - `400` — `{ error: 'mensaje' }` si falla validación.
+    - 200 OK — body: `{ success: true, message: 'Datos recibidos correctamente', data: { sensor: { ... } } }`
+    - 400 Bad Request — body: `{ success: false, error: 'mensaje descriptivo' }`
 
-B. Visualización — Endpoint para frontend
-- Método: `GET`
-- Ruta: `/api/dashboard`
-- Respuesta: `200` con JSON `{ success: true, count: N, data: [ ...sensores ] }` donde cada sensor contiene:
-  - `sensor_id` (string)
-  - `caudal_min` (number)
-  - `total_acumulado` (number)
-  - `hora` (string)
-  - `ultima_actualizacion` (ISO string)
+  2) GET /api/dashboard
+  - Descripción: devuelve la lista de sensores almacenados y métricas derivadas.
+  - Respuesta (ejemplo):
 
-C. Health check
-- `GET /api/health` — devuelve estado simple `{ status: 'ok', timestamp, sensores_activos }`.
+  ```json
+  {
+    "success": true,
+    "count": 3,
+    "data": [
+      {
+        "sensor_id": "1",
+        "caudal_min": 12.0,
+        "total_acumulado": 120.5,
+        "hora": "2025-12-02 10:00:00",
+        "ultima_actualizacion": "2025-12-02T10:00:03.123Z"
+      }
+    ]
+  }
+  ```
 
-## Backend — `monitor-iot/server/index.js`
+  3) GET /api/health
+  - Respuesta: `{ status: 'ok', timestamp: '<iso>', sensores_activos: N }`.
 
-Puntos clave:
-- Usa `express.json()` para parsear JSON y `cors()` para permitir el frontend/ESP32.
-- Contiene validaciones estrictas en `POST /api/sensor-data` para asegurar la estructura del JSON.
-- Mantiene un objeto `sensorData = {}` en memoria:
-  - Al recibir POST, crea/actualiza `sensorData[sensor_id] = { sensor_id, caudal_min, total_acumulado, hora, ultima_actualizacion }`.
-- `GET /api/dashboard` retorna `Object.values(sensorData)`.
+  ---
 
-## Frontend — `monitor-iot/client/src/App.jsx`
+  ## Backend — `monitor-iot/server/index.js`
 
-Puntos clave:
-- `useState` mantiene `sensors` (array) y estados `loading`, `error`, `lastUpdate`.
-- `fetchDashboardData()` consume `GET /api/dashboard` y hace `setSensors(result.data)`.
-- `useEffect` configura `setInterval` para llamar `fetchDashboardData()` cada 3000ms (3s). También realiza la primera llamada inmediatamente.
-- Mapea `sensors.map(sensor => <SensorCard sensor={sensor} />)` en la UI.
+  Resumen de comportamiento del servidor:
 
-Componentes principales:
-- `SensorCard.jsx` — representación por sensor (métricas, hora, estado).
-- `MetricCard`, `Chart`, `AlertsPanel`, `SensorHealth` — UI del dashboard, ya incluidos en `client/src/components`.
+  - Middlewares:
+    - `express.json()` para parsear JSON.
+    - `cors()` configurado para permitir peticiones desde el cliente en desarrollo.
 
-## Simulador local — `monitor-iot/server/simulator.js`
+  - Estado en memoria:
+    - Estructura: `const sensorData = { [sensor_id]: { sensor_id, caudal_min, total_acumulado, hora, ultima_actualizacion } }`.
+    - Al recibir un POST se calcula `Number` para `caudal_min` y `total_acumulado`, se añade `ultima_actualizacion = new Date().toISOString()` y se guarda/actualiza el objeto.
 
-- Script Node que envía POST periódicos (cada 3s) con datos simulados de 3 sensores a `http://localhost:4000/api/sensor-data`.
-- Útil para ver el dashboard sin hardware.
-- Ejecutar: `node simulator.js` dentro de `monitor-iot/server`.
-- Nota: el script usa la API `fetch` disponible en Node 18+; si tienes Node < 18, el script debería instalar `node-fetch` o usar `axios`.
+  - Manejo de errores:
+    - Validación temprana y respuestas con `res.status(400).json({ success:false, error: '...' })`.
+    - Errores internos devuelven `500` con un mensaje genérico.
 
-## Cómo ejecutar todo localmente
+  Recomendación: si vas a exponer el servicio en una red amplia, añade autenticación (API key o tokens) en este endpoint de ingestión.
 
-1) Backend
-```cmd
-cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
-npm install
-npm run start
-```
-- El servidor atiende en `http://localhost:4000`.
+  ---
 
-2) Simulador (opcional — para poblar datos sin ESP32)
-```cmd
-cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
-node simulator.js
-```
-- Verás logs en consola y el backend recibirá datos periódicamente.
+  ## Simulador — `monitor-iot/server/simulator.js`
 
-3) Frontend
-```cmd
-cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\client"
-npm install
-npm run dev
-```
-- Abre la URL que Vite muestre en consola (por ejemplo `http://localhost:5173`).
-- La UI hará polling al backend cada 3s y mostrará tarjetas por sensor.
+  Propósito: permitir probar el pipeline sin hardware real.
 
-## Probar manualmente con `curl` (ejemplos)
+  Características:
+  - Envía lecturas periódicas (configurable) para un conjunto de sensores.
+  - Usa `fetch` (Node 18+) o puede adaptarse a `node-fetch`/`axios` si tu Node es más antiguo.
 
-Enviar un POST de prueba:
-```cmd
-curl -H "Content-Type: application/json" -d "{\"sensor_id\":\"5\",\"caudal_min\":\"12\",\"total_acumulado\":\"120.5\",\"hora\":\"2025-12-02 10:00:00\"}" http://localhost:4000/api/sensor-data
-```
-Obtener dashboard:
-```cmd
-curl http://localhost:4000/api/dashboard
-```
+  Uso:
 
-## Conectar un ESP32 real
-1. En la máquina que corre el servidor, ejecutar `ipconfig` y obtener la IPv4 del adaptador Wi‑Fi (ej.: `192.168.1.42`).
-2. En el firmware del ESP32, configurar la URL POST como:
-```
-http://192.168.1.42:4000/api/sensor-data
-```
-3. Enviar exactamente el JSON indicado en la sección API.
+  ```cmd
+  cd monitor-iot/server
+  node simulator.js
+  ```
 
-## Recomendaciones y mejoras futuras
-- Persistencia: migrar a una base de datos ligera (SQLite, LevelDB o MongoDB) si necesitas conservar datos entre reinicios.
-- Autenticación: añadir API keys o autenticación para evitar envíos no autorizados.
-- Validación extendida: usar `ajv` o `joi` para validación JSON schema si aumentan los campos.
-- WebSocket: considerar socket para push en tiempo real (evita polling) si esperas alta frecuencia.
-- Tests: añadir tests unitarios para endpoints con `supertest` y `jest`.
+  Salida esperada: logs tipo `Enviado sensor 1 -> 200 { success: true, ... }` cada intervalo configurado.
 
-## Troubleshooting rápido
-- Error `Cannot find module 'express'`: ejecutar `npm install` en `monitor-iot/server`.
-- `simulator.js` falla con `fetch is not defined`: tu Node es < 18. Instala `node-fetch` o ejecuta con Node 18+.
-- Frontend no muestra datos: comprobar que backend corre en `4000`, que el simulador/ESP32 envía datos y que Vite no está proxyando a otro host.
+  Configuraciones típicas que puedes añadir al script: número de sensores, intervalo, valores máximos/mínimos, jitter aleatorio.
 
----
+  ---
 
-Si quieres, aplico automáticamente estos cambios al `README.md` (resumiendo) y abro un `PR` en GitHub (si me das acceso o un token). También puedo:
-- Añadir un script `npm run simulate` en `server/package.json` para facilitar el arranque del simulador.
-- Convertir `simulator.js` en una utilidad configurable (`--sensors`, `--interval`).
+  ## Frontend — estructura y comportamiento
 
-Dime si quieres que:
-- agregue el script `npm run simulate` y lo deje configurado, o
-- actualice `README.md` con un resumen y enlace a `docs/IMPLEMENTATION.md`, o
-- cree automáticamente un PR con los cambios (necesitaré permiso/token).
+  Ubicación: `monitor-iot/client`
+
+  Ficheros y responsabilidades principales:
+
+  - `src/App.jsx` — Router y layout general.
+  - `src/components/Sidebar.jsx` — navegación lateral.
+  - `src/components/Header.jsx` — barra superior (estado en vivo, notificaciones).
+  - `src/pages/CommandCenter.jsx` — dashboard principal (usa `SensorCard`, `MetricCard`, `Chart`).
+  - `src/pages/Settings.jsx` — página de configuración (ya implementada, guarda en `localStorage`).
+  - `src/components/SensorCard.jsx` — tarjeta por sensor (muestra `caudal_min`, `total_acumulado`, hora y estado).
+
+  Comportamiento de actualización:
+  - `fetchDashboardData()` llama a `GET /api/dashboard` y actualiza `sensors` en `useState`.
+  - `useEffect` del `CommandCenter` crea un `setInterval(fetchDashboardData, 3000)` y lo limpia en el `cleanup`.
+
+  Notas de diseño:
+  - El polling simplifica el desarrollo. Para producción se recomienda usar WebSockets para disminuir latencia y coste de peticiones.
+
+  ---
+
+  ## Ejemplo rápido: cómo programar un ESP32 (Arduino) para enviar lecturas
+
+  El siguiente ejemplo ilustra el flujo de envío HTTP desde un ESP32 con Arduino core (WiFi.h + HTTPClient.h).
+
+  ```cpp
+  #include <WiFi.h>
+  #include <HTTPClient.h>
+
+  const char* ssid = "TU_SSID";
+  const char* password = "TU_PASS";
+  const char* serverUrl = "http://192.168.1.42:4000/api/sensor-data"; // sustituye por tu IP
+
+  void setup() {
+    Serial.begin(115200);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("Conectado");
+  }
+
+  void loop() {
+    if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      http.begin(serverUrl);
+      http.addHeader("Content-Type", "application/json");
+
+      String payload = "{\"sensor_id\":\"1\",\"caudal_min\":\"12.3\",\"total_acumulado\":\"42.7\",\"hora\":\"2025-12-02 10:00:00\"}";
+      int code = http.POST(payload);
+      String resp = http.getString();
+      Serial.println(code);
+      Serial.println(resp);
+      http.end();
+    }
+    delay(3000);
+  }
+  ```
+
+  Nota: asegúrate de que el ESP32 esté en la misma red local y que la IP del servidor sea accesible desde el dispositivo.
+
+  ---
+
+  ## Comandos y pasos de ejecución
+
+  Frontend (Vite):
+
+  ```cmd
+  cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\client"
+  npm install
+  npm run dev
+  ```
+
+  Backend (Express):
+
+  ```cmd
+  cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
+  npm install
+  npm run start
+  ```
+
+  Simulador:
+
+  ```cmd
+  cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
+  node simulator.js
+  ```
+
+  Pruebas con `curl` (Windows `cmd`):
+
+  ```cmd
+  curl -H "Content-Type: application/json" -d "{\"sensor_id\":\"5\",\"caudal_min\":\"12\",\"total_acumulado\":\"120.5\",\"hora\":\"2025-12-02 10:00:00\"}" http://localhost:4000/api/sensor-data
+  curl http://localhost:4000/api/dashboard
+  ```
+
+  ---
+
+  ## Pruebas y debugging
+
+  - Si obtienes `Cannot find module 'express'`: ejecutar `npm install` dentro de `monitor-iot/server`.
+  - Si `simulator.js` falla con `fetch is not defined`: tu Node es menor a 18. Actualiza Node o instala `node-fetch` y ajusta el script.
+  - Si el frontend no muestra datos: comprueba que `GET /api/dashboard` devuelve `200` (usa `curl`), y que la URL en `client` apunta al host correcto (en desarrollo normalmente `http://localhost:4000`).
+
+  Para tests automáticos: se recomienda añadir pruebas unitarias con `jest` y `supertest` para testar `POST /api/sensor-data` y `GET /api/dashboard`.
+
+  ---
+
+  ## Mejoras propuestas (priorizadas)
+
+  1. Persistencia: migrar a una base de datos (SQLite o MongoDB) para mantener histórico.
+  2. Autenticación: API keys para el endpoint de ingestión.
+  3. Reemplazar polling por WebSockets para mejorar latencia y reducir carga.
+  4. Añadir un endpoint `POST /api/settings` para persistencia de configuraciones de usuario en servidor.
+  5. Añadir una suite de tests e integración continua (GitHub Actions) para validar PRs.
+
+  ---
+
+  Si quieres, aplico también estos cambios al `README.md` (resumen + enlace a `docs/IMPLEMENTATION.md`) y puedo añadir un script `npm run simulate` en `server/package.json` para facilitar el arranque del simulador.
+
+  ````
