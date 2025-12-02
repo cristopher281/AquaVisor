@@ -1,19 +1,20 @@
 import './Sidebar.css';
 import { Link } from 'react-router-dom';
+import { FiBarChart2, FiFileText, FiBell, FiSettings, FiDroplet, FiUser } from 'react-icons/fi';
 
 function Sidebar() {
     const menuItems = [
-        { to: '/', icon: '📊', label: 'Centro comando' },
-        { to: '/reportes', icon: '📋', label: 'Reportes' },
-        { to: '/alertas', icon: '🔔', label: 'Alertas Críticas' },
-        { to: '/config', icon: '⚙️', label: 'Configuración' },
+        { to: '/', icon: <FiBarChart2 />, label: 'Centro comando' },
+        { to: '/reportes', icon: <FiFileText />, label: 'Reportes' },
+        { to: '/alertas', icon: <FiBell />, label: 'Alertas Críticas' },
+        { to: '/config', icon: <FiSettings />, label: 'Configuración' },
     ];
 
     return (
         <aside className="sidebar glass">
             <div className="sidebar-header">
                 <div className="logo">
-                    <div className="logo-icon">💧</div>
+                    <div className="logo-icon"><FiDroplet /></div>
                     <h2>AcuaVisor</h2>
                 </div>
                 <p className="logo-subtitle">Sistema de Control</p>
@@ -22,7 +23,7 @@ function Sidebar() {
             <nav className="sidebar-nav">
                 {menuItems.map((item) => (
                     <Link key={item.to} to={item.to} className={`nav-item`}>
-                        <span className="nav-icon">{item.icon}</span>
+                        <span className="nav-icon icon">{item.icon}</span>
                         <span className="nav-label">{item.label}</span>
                     </Link>
                 ))}
@@ -30,7 +31,7 @@ function Sidebar() {
 
             <div className="sidebar-footer">
                 <div className="user-info">
-                    <div className="user-avatar">👤</div>
+                    <div className="user-avatar"><FiUser /></div>
                     <div className="user-details">
                         <p className="user-name">Admin</p>
                         <p className="user-role">Sistema</p>

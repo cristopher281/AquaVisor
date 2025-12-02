@@ -1,4 +1,5 @@
 import './Header.css';
+import { FiBell, FiRadio } from 'react-icons/fi';
 
 function Header({ lastUpdate }) {
     const formatLastUpdate = () => {
@@ -26,7 +27,7 @@ function Header({ lastUpdate }) {
 
                 <div className="header-right">
                     <div className="status-indicator">
-                        <span className="status-dot pulse"></span>
+                        <span className="status-dot pulse"><FiRadio /></span>
                         <span className="status-text">En vivo</span>
                     </div>
 
@@ -36,7 +37,7 @@ function Header({ lastUpdate }) {
                     </div>
 
                     <button className="notification-button">
-                        <span className="notification-icon">🔔</span>
+                        <span className="notification-icon"><FiBell /></span>
                         <span className="notification-badge">3</span>
                     </button>
                 </div>
