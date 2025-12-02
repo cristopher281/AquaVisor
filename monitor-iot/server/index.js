@@ -15,6 +15,24 @@ if (MONGO_URI) {
     mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
       .then(() => console.log('Conectado a MongoDB'))
       .catch((err) => console.error('Error conectando a MongoDB:', err.message));
+
+    // Definir esquema y modelo para lecturas de sensores (upsert por sensor_id)
+    const sensorSchema = new mongoose.Schema({
+      sensor_id: { type: String, required: true, unique: true },
+      caudal_min: { type: Number, required: true },
+      total_acumulado: { type: Number, required: true },
+      hora: { type: String },
+      ultima_actualizacion: { type: Date, default: Date.now }
+    }, { timestamps: true });
+
+    // Si el modelo ya existe (re-ejecuciones en dev), usarlo
+    try {
+      mongoose.model('Sensor');
+    } catch (e) {}
+    const Sensor = mongoose.models.Sensor || mongoose.model('Sensor', sensorSchema);
+
+    // Exponer el modelo en app.locals para uso en handlers
+    app.locals.Sensor = Sensor;
   } catch (err) {
     console.warn('Mongoose no está instalado o no se pudo cargar:', err.message);
   }
@@ -66,14 +84,33 @@ app.post('/api/sensor-data', (req, res) => {
       ultima_actualizacion: new Date().toISOString()
     };
 
-    // Actualizar estado en memoria usando sensor_id como clave única
+    // Si hay conexión a Mongo, persistir con upsert; si no, usar memoria
+    const Sensor = req.app.locals.Sensor;
+    if (Sensor) {
+      Sensor.findOneAndUpdate(
+        { sensor_id: data.sensor_id },
+        { $set: { caudal_min: data.caudal_min, total_acumulado: data.total_acumulado, hora: data.hora, ultima_actualizacion: new Date() } },
+        { upsert: true, new: true }
+      ).lean().then((saved) => {
+        console.log(`[${new Date().toISOString()}] Datos persistidos Mongo para sensor ${sensor_id}:`, saved);
+        res.status(200).json({ success: true, message: 'Datos recibidos y guardados', data: saved });
+      }).catch((err) => {
+        console.error('Error guardando en Mongo:', err);
+        // Fallback a memoria
+        sensorData[sensor_id] = data;
+        res.status(200).json({ success: true, message: 'Datos recibidos (guardado en memoria por error DB)', data });
+      });
+      return;
+    }
+
+    // Fallback: actualizar estado en memoria usando sensor_id como clave única
     sensorData[sensor_id] = data;
 
     console.log(`[${new Date().toISOString()}] Datos recibidos del sensor ${sensor_id}:`, data);
 
     res.status(200).json({ 
       success: true, 
-      message: 'Datos recibidos correctamente',
+      message: 'Datos recibidos correctamente (memoria)',
       data: data
     });
   } catch (error) {
@@ -92,7 +129,20 @@ app.post('/api/sensor-data', (req, res) => {
  */
 app.get('/api/dashboard', (req, res) => {
   try {
-    // Convertir objeto a array de sensores
+    // Si hay modelo Sensor (Mongo), leer desde DB
+    const Sensor = req.app.locals.Sensor;
+    if (Sensor) {
+      Sensor.find({}).lean().then((sensores) => {
+        res.status(200).json({ success: true, count: sensores.length, data: sensores });
+      }).catch((err) => {
+        console.error('Error leyendo sensores desde Mongo:', err);
+        const sensores = Object.values(sensorData);
+        res.status(200).json({ success: true, count: sensores.length, data: sensores });
+      });
+      return;
+    }
+
+    // Fallback: memoria
     const sensores = Object.values(sensorData);
 
     res.status(200).json({
@@ -124,7 +174,7 @@ app.listen(PORT, () => {
 ╔════════════════════════════════════════════════════════════╗
 ║                   SERVIDOR ACUAVISOR                       ║
 ╠════════════════════════════════════════════════════════════╣
-║  Puerto:              ${PORT}                                    ║
+║  Puerto:              ${PORT}                              ║
 ║  Estado:              ACTIVO ✓                             ║
 ║  Endpoint Ingesta:    POST /api/sensor-data                ║
 ║  Endpoint Dashboard:  GET  /api/dashboard                  ║
