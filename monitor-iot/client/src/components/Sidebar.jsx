@@ -1,13 +1,12 @@
 import './Sidebar.css';
+import { Link } from 'react-router-dom';
 
 function Sidebar() {
     const menuItems = [
-        { id: 'dashboard', icon: '📊', label: 'Centro comando', active: true },
-        { id: 'monitoring', icon: '📡', label: 'Monitoreo en tiempo real' },
-        { id: 'units', icon: '🔧', label: 'Unidades' },
-        { id: 'analytics', icon: '📈', label: 'Análisis Predictivo' },
-        { id: 'history', icon: '📜', label: 'Histórico' },
-        { id: 'settings', icon: '⚙️', label: 'Configuración' },
+        { to: '/', icon: '📊', label: 'Centro comando' },
+        { to: '/reportes', icon: '📋', label: 'Reportes' },
+        { to: '/alertas', icon: '🔔', label: 'Alertas Críticas' },
+        { to: '/config', icon: '⚙️', label: 'Configuración' },
     ];
 
     return (
@@ -22,14 +21,10 @@ function Sidebar() {
 
             <nav className="sidebar-nav">
                 {menuItems.map((item) => (
-                    <a
-                        key={item.id}
-                        href={`#${item.id}`}
-                        className={`nav-item ${item.active ? 'active' : ''}`}
-                    >
+                    <Link key={item.to} to={item.to} className={`nav-item`}>
                         <span className="nav-icon">{item.icon}</span>
                         <span className="nav-label">{item.label}</span>
-                    </a>
+                    </Link>
                 ))}
             </nav>
 
