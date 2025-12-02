@@ -1,8 +1,26 @@
+// Cargar variables de entorno (si existe `.env`)
+try { require('dotenv').config(); } catch (e) { /* dotenv may be absent in some environments */ }
+
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+
+// Conectar a MongoDB si MONGO_URI está definida (opcional)
+const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || null;
+if (MONGO_URI) {
+  try {
+    const mongoose = require('mongoose');
+    mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+      .then(() => console.log('Conectado a MongoDB'))
+      .catch((err) => console.error('Error conectando a MongoDB:', err.message));
+  } catch (err) {
+    console.warn('Mongoose no está instalado o no se pudo cargar:', err.message);
+  }
+} else {
+  console.log('MONGO_URI no definida — usando almacenamiento en memoria (desarrollo).');
+}
 
 // Middleware
 app.use(cors());
