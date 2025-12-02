@@ -1,0 +1,134 @@
+.alerts-panel {
+    padding: 24px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    animation: fadeIn 0.7s ease;
+}
+
+.alerts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.alerts-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.alerts-count {
+    width: 28px;
+    height: 28px;
+    background: var(--gradient-danger);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+}
+
+.alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 10px;
+    border-left: 3px solid;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.alert-item:hover {
+    transform: translateX(4px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.alert-item.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-left-color: var(--accent-yellow);
+}
+
+.alert-item.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-left-color: var(--accent-blue);
+}
+
+.alert-item.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    border-left-color: var(--accent-green);
+}
+
+.alert-icon {
+    font-size: 24px;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.alert-sensor {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.alert-time {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.view-all-button {
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--gradient-danger);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.view-all-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+}
+
+.button-arrow {
+    font-size: 16px;
+    transition: transform var(--transition-fast);
+}
+
+.view-all-button:hover .button-arrow {
+    transform: translateX(4px);
+}
