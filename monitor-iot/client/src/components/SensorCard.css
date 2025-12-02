@@ -1,0 +1,59 @@
+.sensor-card {
+  background: linear-gradient(180deg, #111318 0%, #0f1416 100%);
+  border-radius: 8px;
+  padding: 12px;
+  color: #e6eef3;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.sensor-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sensor-id {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.sensor-status {
+  background: #0d6b3a;
+  color: #c9ffe0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.sensor-card-body {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: #9fb0b8;
+}
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #dff7ff;
+}
+
+.sensor-card-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #8aa3ad;
+}

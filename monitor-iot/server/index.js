@@ -27,12 +27,24 @@ app.post('/api/sensor-data', (req, res) => {
       });
     }
 
-    // Convertir valores numéricos
+    // Validar que los campos esperados existen
+    if (caudal_min === undefined || total_acumulado === undefined || hora === undefined) {
+      return res.status(400).json({ error: 'Se requieren los campos: caudal_min, total_acumulado, hora' });
+    }
+
+    // Convertir valores numéricos y validar que son números válidos
+    const caudalNum = parseFloat(caudal_min);
+    const totalNum = parseFloat(total_acumulado);
+
+    if (Number.isNaN(caudalNum) || Number.isNaN(totalNum)) {
+      return res.status(400).json({ error: 'caudal_min y total_acumulado deben ser numéricos' });
+    }
+
     const data = {
-      sensor_id: sensor_id,
-      caudal_min: parseFloat(caudal_min),
-      total_acumulado: parseFloat(total_acumulado),
-      hora: hora,
+      sensor_id: String(sensor_id),
+      caudal_min: caudalNum,
+      total_acumulado: totalNum,
+      hora: String(hora),
       ultima_actualizacion: new Date().toISOString()
     };
 
