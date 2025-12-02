@@ -102,6 +102,13 @@
     gap: 24px;
 }
 
+.sensors-list {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
 .chart-section {
     display: flex;
     flex-direction: column;
