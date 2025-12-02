@@ -6,6 +6,7 @@ import Chart from './components/Chart';
 import AlertsPanel from './components/AlertsPanel';
 import WaterQualityMetrics from './components/WaterQualityMetrics';
 import SensorHealth from './components/SensorHealth';
+import SensorCard from './components/SensorCard';
 import './App.css';
 
 function App() {
@@ -159,6 +160,12 @@ function App() {
                                 <div className="bottom-metrics">
                                     <WaterQualityMetrics />
                                     <SensorHealth sensorsCount={metrics.operationalSensors} />
+                                </div>
+                                
+                                <div className="sensors-list">
+                                    {sensors.map((s) => (
+                                        <SensorCard key={s.sensor_id} sensor={s} />
+                                    ))}
                                 </div>
                             </div>
 
