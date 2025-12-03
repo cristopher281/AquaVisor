@@ -1,13 +1,21 @@
 .sensor-card {
-  background: linear-gradient(180deg, #111318 0%, #0f1416 100%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px;
-  color: #e6eef3;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 200px;
+  transition: all var(--transition-normal);
+}
+
+.sensor-card:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .sensor-card-header {
@@ -19,14 +27,16 @@
 .sensor-id {
   font-weight: 700;
   font-size: 14px;
+  color: var(--text-primary);
 }
 
 .sensor-status {
-  background: #0d6b3a;
-  color: #c9ffe0;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
   padding: 4px 8px;
   border-radius: 999px;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .sensor-card-body {
@@ -42,18 +52,18 @@
 
 .metric-label {
   font-size: 11px;
-  color: #9fb0b8;
+  color: var(--text-muted);
 }
 
 .metric-value {
   font-size: 20px;
   font-weight: 700;
-  color: #dff7ff;
+  color: var(--text-primary);
 }
 
 .sensor-card-footer {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: #8aa3ad;
+  color: var(--text-secondary);
 }

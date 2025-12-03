@@ -183,6 +183,52 @@
   background: rgba(0, 0, 0, 0.3);
 }
 
+/* Ajustes específicos para sidebar en tema claro */
+[data-theme="claro"] .nav-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="claro"] .nav-item.active {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+[data-theme="claro"] .user-info:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Ajustes para el dropdown de exportar en tema claro */
+[data-theme="claro"] .export-menu {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="claro"] .export-option {
+  color: var(--text-primary);
+}
+
+[data-theme="claro"] .export-option:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Ajustes para tooltips en tema claro */
+[data-theme="claro"] .custom-tooltip {
+  background: var(--bg-card);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Ajustes para mejorar contraste de iconos y elementos pequeños */
+[data-theme="claro"] .notification-icon,
+[data-theme="claro"] .nav-icon {
+  color: var(--text-primary);
+  opacity: 0.8;
+}
+
+[data-theme="claro"] .nav-item:hover .nav-icon,
+[data-theme="claro"] .notification-button:hover .notification-icon {
+  opacity: 1;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;

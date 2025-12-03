@@ -59,6 +59,17 @@
 
 .alert-item:hover {
     transform: translateX(4px);
+}
+
+[data-theme="claro"] .alert-item:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* For dark themes */
+[data-theme="medianoche"] .alert-item:hover,
+[data-theme="neon"] .alert-item:hover,
+[data-theme="cobalto"] .alert-item:hover,
+:root:not([data-theme]) .alert-item:hover {
     background: rgba(255, 255, 255, 0.05);
 }
 

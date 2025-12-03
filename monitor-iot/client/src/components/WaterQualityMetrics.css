@@ -30,7 +30,24 @@
 }
 
 .metric-item:hover {
+    transform: translateY(-2px);
+}
+
+/* Dark themes hover */
+[data-theme="medianoche"] .metric-item:hover,
+[data-theme="neon"] .metric-item:hover,
+[data-theme="cobalto"] .metric-item:hover,
+:root:not([data-theme]) .metric-item:hover {
     background: rgba(255, 255, 255, 0.06);
+}
+
+/* Light theme hover */
+[data-theme="claro"] .metric-item {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="claro"] .metric-item:hover {
+    background: rgba(0, 0, 0, 0.06);
 }
 
 .metric-info {
