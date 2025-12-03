@@ -8,19 +8,20 @@
 
 ##  Índice
 
-1. [Descripción General](#-descripción-general)
-2. [Arquitectura del Sistema](#-arquitectura-del-sistema)
-3. [Requisitos Previos](#-requisitos-previos)
-4. [Instalación](#-instalación)
-5. [Configuración](#-configuración)
-6. [Ejecución](#-ejecución)
-7. [API Endpoints](#-api-endpoints)
-8. [Integración ESP32](#-integración-esp32)
-9. [Sistema de Persistencia](#-sistema-de-persistencia)
-10. [Funcionalidades Avanzadas](#-funcionalidades-avanzadas)
-11. [Despliegue en Producción](#-despliegue-en-producción)
-12. [Resolución de Problemas](#-resolución-de-problemas)
-13. [Mejoras Futuras](#-mejoras-futuras)
+1. [Descripción General](#descripción-general)
+2. [Arquitectura del Sistema](#arquitectura-del-sistema)
+3. [Requisitos Previos](#requisitos-previos)
+4. [Instalación](#instalación)
+5. [Configuración](#configuración)
+6. [Ejecución](#ejecución)
+7. [API Endpoints](#api-endpoints)
+8. [Integración ESP32](#integración-esp32)
+9. [Sistema de Persistencia](#sistema-de-persistencia)
+10. [Funcionalidades Avanzadas](#funcionalidades-avanzadas)
+11. [Despliegue en Producción](#despliegue-en-producción)
+12. [Resolución de Problemas](#resolución-de-problemas)
+13. [Mejoras Futuras](#mejoras-futuras)
+14. [Documentación Adicional](#documentación-adicional)
 
 ---
 
@@ -846,6 +847,28 @@ cat server/data/sensors.json
 
 ---
 
+## 📚 Documentación Adicional
+
+### Historial de Mejoras y Correcciones
+
+Para conocer el historial completo de todas las mejoras, correcciones y optimizaciones implementadas en el proyecto, consulta:
+
+📖 **[MEJORAS-Y-CORRECCIONES.md](./MEJORAS-Y-CORRECCIONES.md)**
+
+Este documento incluye:
+- Análisis detallado de problemas encontrados
+- Soluciones implementadas con ejemplos de código
+- Mejores prácticas establecidas
+- Métricas de mejora y validación
+- Guía de referencia para futuras implementaciones
+
+### Otros Recursos
+
+- **README.md** - Introducción rápida al proyecto
+- **IMPLEMENTATION.md** (este documento) - Guía completa de implementación
+- **MEJORAS-Y-CORRECCIONES.md** - Historial de mejoras y cambios
+
+---
 
 **Última actualización:** Diciembre 2025  
 **Versión del documento:** 1.0.0
