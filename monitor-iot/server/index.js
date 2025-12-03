@@ -11,10 +11,9 @@ const fs = require('fs');
 const path = require('path');
 
 // Persistencia exclusiva en disco (archivos JSON)
-// Nota: se eliminó el soporte a MongoDB por decisión del deploy (solo almacenamiento en Clever Cloud/filesystem)
 app.locals.dbConnected = false;
 app.locals.dbBacking = 'file';
-console.log('Persistencia: almacenamiento en disco (sistema de archivos local) activo. Soporte MongoDB eliminado.');
+console.log('Persistencia: almacenamiento en disco (sistema de archivos local) activo.');
 
 // Middleware
 app.use(cors());
@@ -134,30 +133,7 @@ app.post('/api/sensor-data', (req, res) => {
       ultima_actualizacion: new Date().toISOString()
     };
 
-    // Si hay conexión a Mongo (conexión establecida), persistir con upsert; si no, usar memoria
-    const Sensor = req.app.locals.Sensor;
-    const dbConnected = req.app.locals.dbConnected;
-    if (Sensor && dbConnected) {
-      Sensor.findOneAndUpdate(
-        { sensor_id: data.sensor_id },
-        { $set: { caudal_min: data.caudal_min, total_acumulado: data.total_acumulado, hora: data.hora, ultima_actualizacion: new Date() } },
-        { upsert: true, new: true }
-      ).lean().then((saved) => {
-        console.log(`[${new Date().toISOString()}] Datos persistidos Mongo para sensor ${sensor_id}:`, saved);
-        // también mantener historial en memoria para la API de reportes
-        try { pushHistory(sensor_id, { ...data, stored: 'mongo' }); } catch (e) { /* ignore */ }
-        res.status(200).json({ success: true, message: 'Datos recibidos y guardados', data: saved });
-      }).catch((err) => {
-        console.error('Error guardando en Mongo:', err);
-        // Fallback a memoria
-        sensorData[sensor_id] = data;
-        try { pushHistory(sensor_id, { ...data, stored: 'memory' }); } catch (e) { /* ignore */ }
-        res.status(200).json({ success: true, message: 'Datos recibidos (guardado en memoria por error DB)', data });
-      });
-      return;
-    }
-
-    // Fallback: actualizar estado en memoria usando sensor_id como clave única
+    // Actualizar estado en memoria usando sensor_id como clave única
     sensorData[sensor_id] = data;
 
     // mantener historial en memoria
@@ -186,20 +162,7 @@ app.post('/api/sensor-data', (req, res) => {
  */
 app.get('/api/dashboard', (req, res) => {
   try {
-    // Si hay modelo Sensor (Mongo), leer desde DB
-    const Sensor = req.app.locals.Sensor;
-    if (Sensor) {
-      Sensor.find({}).lean().then((sensores) => {
-        res.status(200).json({ success: true, count: sensores.length, data: sensores });
-      }).catch((err) => {
-        console.error('Error leyendo sensores desde Mongo:', err);
-        const sensores = Object.values(sensorData);
-        res.status(200).json({ success: true, count: sensores.length, data: sensores });
-      });
-      return;
-    }
-
-    // Fallback: memoria
+    // Leer directamente desde memoria (persistencia a disco en segundo plano)
     const sensores = Object.values(sensorData);
 
     res.status(200).json({
