@@ -1,23 +1,23 @@
 {
   "1": {
     "sensor_id": "1",
-    "caudal_min": 4,
-    "total_acumulado": 4221.3,
-    "hora": "2025-12-02 21:18:41",
-    "ultima_actualizacion": "2025-12-03T03:18:41.515Z"
+    "caudal_min": 13,
+    "total_acumulado": 4223.4,
+    "hora": "2025-12-02 21:18:50",
+    "ultima_actualizacion": "2025-12-03T03:18:50.534Z"
   },
   "2": {
     "sensor_id": "2",
-    "caudal_min": 5.8,
-    "total_acumulado": 4188.2,
-    "hora": "2025-12-02 21:18:41",
-    "ultima_actualizacion": "2025-12-03T03:18:41.723Z"
+    "caudal_min": 10.5,
+    "total_acumulado": 4190.8,
+    "hora": "2025-12-02 21:18:50",
+    "ultima_actualizacion": "2025-12-03T03:18:50.751Z"
   },
   "3": {
     "sensor_id": "3",
-    "caudal_min": 12.5,
-    "total_acumulado": 4291.9,
-    "hora": "2025-12-02 21:18:41",
-    "ultima_actualizacion": "2025-12-03T03:18:41.941Z"
+    "caudal_min": 6.7,
+    "total_acumulado": 4296.8,
+    "hora": "2025-12-02 21:18:50",
+    "ultima_actualizacion": "2025-12-03T03:18:50.966Z"
   }
 }
