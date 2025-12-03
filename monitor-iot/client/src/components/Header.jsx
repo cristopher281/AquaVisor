@@ -6,10 +6,22 @@ function Header({ lastUpdate }) {
     const [showNotifications, setShowNotifications] = useState(false);
     const [reports, setReports] = useState([]);
 
-    useEffect(() => {
-        // Cargar reportes descargados desde localStorage
+    // Función para cargar reportes desde localStorage
+    const loadReports = () => {
         const savedReports = JSON.parse(localStorage.getItem('downloadedReports') || '[]');
         setReports(savedReports);
+    };
+
+    useEffect(() => {
+        // Cargar reportes iniciales
+        loadReports();
+
+        // Escuchar evento personalizado cuando se descargue un reporte
+        const handleNewReport = () => {
+            loadReports();
+        };
+
+        window.addEventListener('reportDownloaded', handleNewReport);
 
         // Listener para cerrar dropdown al hacer click fuera
         const handleClickOutside = (e) => {
@@ -19,7 +31,11 @@ function Header({ lastUpdate }) {
         };
 
         document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
+
+        return () => {
+            window.removeEventListener('reportDownloaded', handleNewReport);
+            document.removeEventListener('click', handleClickOutside);
+        };
     }, []);
 
     const formatLastUpdate = () => {

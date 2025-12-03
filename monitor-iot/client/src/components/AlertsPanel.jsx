@@ -23,6 +23,11 @@ function AlertsPanel({ sensors }) {
         // Mantener solo los últimos 10 reportes
         if (reports.length > 10) reports.pop();
         localStorage.setItem('downloadedReports', JSON.stringify(reports));
+
+        // Disparar evento personalizado para notificar al Header
+        window.dispatchEvent(new CustomEvent('reportDownloaded', {
+            detail: newReport
+        }));
     };
 
     useEffect(() => {
