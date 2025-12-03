@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Chart from '../components/Chart';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiDownload, FiFilter } from 'react-icons/fi';
 import './Reports.css';
 
 function Reports() {
@@ -17,8 +17,13 @@ function Reports() {
         const json = await res.json();
         if (json.success) {
           setReports(json.data || {});
-          const first = Object.keys(json.data || {})[0] || null;
-          setSelectedSensor(first);
+
+          // Solo setear el primer sensor si no hay ninguno seleccionado
+          // o si el sensor seleccionado ya no existe en los nuevos datos
+          if (!selectedSensor || !json.data[selectedSensor]) {
+            const first = Object.keys(json.data || {})[0] || null;
+            setSelectedSensor(first);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -30,7 +35,7 @@ function Reports() {
     // actualizar cada 5s
     const iv = setInterval(fetchData, 5000);
     return () => clearInterval(iv);
-  }, []);
+  }, [selectedSensor]); // Agregar selectedSensor como dependencia
 
   // Reset to page 1 when data changes
   useEffect(() => {
@@ -63,6 +68,28 @@ function Reports() {
     }
   };
 
+  const handleExportCSV = () => {
+    // Exportar CSV del sensor seleccionado (cliente-side)
+    if (!selectedSensor || !reports[selectedSensor]) {
+      alert('Selecciona un sensor con datos');
+      return;
+    }
+    const arr = reports[selectedSensor];
+    const rows = [];
+    rows.push(['timestamp', 'sensor_id', 'hora', 'caudal_min', 'total_acumulado']);
+    arr.forEach(it => rows.push([it.ultima_actualizacion || '', selectedSensor, it.hora || '', it.caudal_min || '', it.total_acumulado || '']));
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `historial_${selectedSensor}_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="page reports">
       <header className="page-header">
@@ -75,33 +102,28 @@ function Reports() {
       ) : (
         <div className="reports-grid">
           <div className="reports-chart">
-            <div style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div>
-                <label>Sensor: </label>
-                <select value={selectedSensor || ''} onChange={e => setSelectedSensor(e.target.value)}>
+            <div className="chart-controls">
+              <div className="control-group">
+                <label className="control-label">
+                  <FiFilter className="label-icon" />
+                  Sensor
+                </label>
+                <select
+                  className="sensor-select"
+                  value={selectedSensor || ''}
+                  onChange={e => setSelectedSensor(e.target.value)}
+                >
                   {Object.keys(reports).length === 0 && <option value="">(sin datos)</option>}
                   {Object.keys(reports).map(k => <option key={k} value={k}>{k}</option>)}
                 </select>
               </div>
-              <div>
-                <button onClick={() => {
-                  // Exportar CSV del sensor seleccionado (cliente-side)
-                  if (!selectedSensor || !reports[selectedSensor]) { alert('Selecciona un sensor con datos'); return; }
-                  const arr = reports[selectedSensor];
-                  const rows = [];
-                  rows.push(['timestamp', 'sensor_id', 'hora', 'caudal_min', 'total_acumulado']);
-                  arr.forEach(it => rows.push([it.ultima_actualizacion || '', selectedSensor, it.hora || '', it.caudal_min || '', it.total_acumulado || '']));
-                  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `historial_${selectedSensor}_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
-                  document.body.appendChild(a);
-                  a.click(); a.remove(); URL.revokeObjectURL(url);
-                }}>Exportar CSV</button>
-              </div>
+
+              <button className="export-btn" onClick={handleExportCSV}>
+                <FiDownload className="btn-icon" />
+                Exportar CSV
+              </button>
             </div>
+
             <Chart data={chartData} title={`Rendimiento Histórico: ${selectedSensor || ''}`} currentValue={`${chartData.length ? chartData[chartData.length - 1].value : '-'} m³`} />
           </div>
 
