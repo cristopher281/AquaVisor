@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import './App.css';
@@ -9,6 +10,17 @@ import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 
 function App() {
+    // Cargar tema guardado al iniciar la aplicación
+    useEffect(() => {
+        try {
+            const settings = JSON.parse(localStorage.getItem('acua_settings') || '{}');
+            const theme = settings.colorTheme || 'estandar';
+            document.documentElement.setAttribute('data-theme', theme);
+        } catch (error) {
+            console.error('Error loading theme:', error);
+            document.documentElement.setAttribute('data-theme', 'estandar');
+        }
+    }, []);
     return (
         <BrowserRouter>
             <div className="app">

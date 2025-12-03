@@ -31,8 +31,12 @@ function Settings() {
   }
 
   function selectTheme(name) {
-    setState((s) => ({ ...s, colorTheme: name }));
+    const newState = { ...state, colorTheme: name };
+    setState(newState);
     document.documentElement.setAttribute('data-theme', name);
+    // Guardar inmediatamente
+    localStorage.setItem('acua_settings', JSON.stringify(newState));
+    setSavedAt(new Date().toISOString());
   }
 
   function save() {
@@ -130,38 +134,47 @@ function Settings() {
           <div className="themes">
             <div className={`theme-tile ${state.colorTheme === 'estandar' ? 'selected' : ''}`} onClick={() => selectTheme('estandar')}>
               <div className="swatches">
-                <span style={{background:'#2b3a67'}} />
-                <span style={{background:'#3b82f6'}} />
-                <span style={{background:'#06b6d4'}} />
+                <span style={{ background: '#2b3a67' }} />
+                <span style={{ background: '#3b82f6' }} />
+                <span style={{ background: '#06b6d4' }} />
               </div>
               <div className="theme-label">Estándar</div>
             </div>
 
             <div className={`theme-tile ${state.colorTheme === 'medianoche' ? 'selected' : ''}`} onClick={() => selectTheme('medianoche')}>
               <div className="swatches">
-                <span style={{background:'#0b1220'}} />
-                <span style={{background:'#4c51bf'}} />
-                <span style={{background:'#06b6d4'}} />
+                <span style={{ background: '#0b1220' }} />
+                <span style={{ background: '#4c51bf' }} />
+                <span style={{ background: '#06b6d4' }} />
               </div>
               <div className="theme-label">Medianoche</div>
             </div>
 
             <div className={`theme-tile ${state.colorTheme === 'neon' ? 'selected' : ''}`} onClick={() => selectTheme('neon')}>
               <div className="swatches">
-                <span style={{background:'#081018'}} />
-                <span style={{background:'#06b6d4'}} />
-                <span style={{background:'#f59e0b'}} />
+                <span style={{ background: '#081018' }} />
+                <span style={{ background: '#06b6d4' }} />
+                <span style={{ background: '#f59e0b' }} />
               </div>
               <div className="theme-label">Neón</div>
             </div>
 
             <div className={`theme-tile ${state.colorTheme === 'cobalto' ? 'selected' : ''}`} onClick={() => selectTheme('cobalto')}>
               <div className="swatches">
-                <span style={{background:'#071124'}} />
-                <span style={{background:'#334155'}} />
-                <span style={{background:'#667eea'}} />
+                <span style={{ background: '#071124' }} />
+                <span style={{ background: '#334155' }} />
+                <span style={{ background: '#667eea' }} />
               </div>
               <div className="theme-label">Cobalto</div>
+            </div>
+
+            <div className={`theme-tile ${state.colorTheme === 'claro' ? 'selected' : ''}`} onClick={() => selectTheme('claro')}>
+              <div className="swatches">
+                <span style={{ background: '#f8fafc', border: '1px solid #cbd5e1' }} />
+                <span style={{ background: '#2563eb' }} />
+                <span style={{ background: '#059669' }} />
+              </div>
+              <div className="theme-label">Modo Claro</div>
             </div>
           </div>
         </section>
