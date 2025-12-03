@@ -1,7 +1,27 @@
+import { useState, useEffect } from 'react';
 import './Header.css';
-import { FiBell, FiRadio } from 'react-icons/fi';
+import { FiBell, FiRadio, FiDownload, FiFileText, FiX } from 'react-icons/fi';
 
 function Header({ lastUpdate }) {
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [reports, setReports] = useState([]);
+
+    useEffect(() => {
+        // Cargar reportes descargados desde localStorage
+        const savedReports = JSON.parse(localStorage.getItem('downloadedReports') || '[]');
+        setReports(savedReports);
+
+        // Listener para cerrar dropdown al hacer click fuera
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.notification-button') && !e.target.closest('.notifications-dropdown')) {
+                setShowNotifications(false);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
     const formatLastUpdate = () => {
         if (!lastUpdate) return 'Cargando...';
 
@@ -11,6 +31,17 @@ function Header({ lastUpdate }) {
         if (diff < 5) return 'Justo ahora';
         if (diff < 60) return `Hace ${diff}s`;
         return lastUpdate.toLocaleTimeString('es-ES');
+    };
+
+    const clearReport = (index) => {
+        const newReports = reports.filter((_, i) => i !== index);
+        setReports(newReports);
+        localStorage.setItem('downloadedReports', JSON.stringify(newReports));
+    };
+
+    const clearAllReports = () => {
+        setReports([]);
+        localStorage.setItem('downloadedReports', JSON.stringify([]));
     };
 
     return (
@@ -27,7 +58,10 @@ function Header({ lastUpdate }) {
 
                 <div className="header-right">
                     <div className="status-indicator">
-                        <span className="status-dot pulse"><FiRadio /></span>
+                        <span className="status-dot-wrapper">
+                            <FiRadio className="status-icon" />
+                            <span className="status-pulse"></span>
+                        </span>
                         <span className="status-text">En vivo</span>
                     </div>
 
@@ -36,10 +70,62 @@ function Header({ lastUpdate }) {
                         <span className="update-time">{formatLastUpdate()}</span>
                     </div>
 
-                    <button className="notification-button">
-                        <span className="notification-icon"><FiBell /></span>
-                        <span className="notification-badge">3</span>
-                    </button>
+                    <div className="notification-container">
+                        <button
+                            className="notification-button"
+                            onClick={() => setShowNotifications(!showNotifications)}
+                        >
+                            <span className="notification-icon"><FiBell /></span>
+                            {reports.length > 0 && (
+                                <span className="notification-badge">{reports.length}</span>
+                            )}
+                        </button>
+
+                        {showNotifications && (
+                            <div className="notifications-dropdown">
+                                <div className="notifications-header">
+                                    <h3>Reportes Descargados</h3>
+                                    {reports.length > 0 && (
+                                        <button
+                                            className="clear-all-btn"
+                                            onClick={clearAllReports}
+                                        >
+                                            Limpiar todo
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="notifications-list">
+                                    {reports.length === 0 ? (
+                                        <div className="no-notifications">
+                                            <FiFileText className="no-notif-icon" />
+                                            <p>No hay reportes descargados</p>
+                                            <span className="no-notif-hint">
+                                                Los reportes generados aparecerán aquí
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        reports.map((report, index) => (
+                                            <div key={index} className="notification-item">
+                                                <div className="notif-icon">
+                                                    <FiDownload />
+                                                </div>
+                                                <div className="notif-content">
+                                                    <p className="notif-title">{report.name}</p>
+                                                    <p className="notif-time">{report.time}</p>
+                                                </div>
+                                                <button
+                                                    className="notif-remove"
+                                                    onClick={() => clearReport(index)}
+                                                >
+                                                    <FiX />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </header>
@@ -47,3 +133,4 @@ function Header({ lastUpdate }) {
 }
 
 export default Header;
+

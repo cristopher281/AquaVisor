@@ -89,7 +89,28 @@
 }
 
 .alert-icon {
-    font-size: 24px;
+    font-size: 20px;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--transition-fast);
+}
+
+.alert-item:hover .alert-icon {
+    transform: scale(1.1);
+}
+
+.alert-warning .alert-icon {
+    color: var(--accent-yellow);
+}
+
+.alert-info .alert-icon {
+    color: var(--accent-blue);
+}
+
+.alert-success .alert-icon {
+    color: var(--accent-green);
 }
 
 .alert-content {
