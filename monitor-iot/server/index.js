@@ -1,5 +1,14 @@
-// Cargar variables de entorno (si existe `.env`)
-try { require('dotenv').config(); } catch (e) { /* dotenv may be absent in some environments */ }
+// Cargar variables de entorno: primero `.env.local` (si existe), luego `.env`
+try {
+  const dotenv = require('dotenv');
+  const envLocal = require('path').join(__dirname, '.env.local');
+  const fsCheck = require('fs');
+  if (fsCheck.existsSync(envLocal)) {
+    dotenv.config({ path: envLocal });
+    console.log('Cargado entorno desde .env.local');
+  }
+  dotenv.config();
+} catch (e) { /* dotenv may be absent in some environments */ }
 
 const express = require('express');
 const cors = require('cors');

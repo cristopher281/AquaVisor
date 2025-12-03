@@ -24,17 +24,44 @@ async function main() {
     const historyFile = path.join(dataDir, 'history.json');
     if (fs.existsSync(historyFile)) {
       const raw = fs.readFileSync(historyFile, 'utf8');
-      const arr = JSON.parse(raw);
-      console.log('Registros encontrados en history.json:', arr.length);
-      for (const item of arr) {
-        const sensor_id = item.sensor_id || item.id || 'unknown';
-        const ts = item.hora ? new Date(item.hora) : new Date();
-        try {
-          await pool.query('INSERT INTO history (sensor_id, ts, payload) VALUES (?, ?, ?)', [sensor_id, ts, JSON.stringify(item)]);
-        } catch (err) {
-          console.error('Error insert history item:', err);
+      const parsed = JSON.parse(raw);
+
+      // history.json puede ser un ARRAY o un OBJETO con claves por sensor.
+      if (Array.isArray(parsed)) {
+        console.log('Registros (array) encontrados en history.json:', parsed.length);
+        for (const item of parsed) {
+          const sensor_id = item.sensor_id || item.id || 'unknown';
+          const ts = item.hora ? new Date(item.hora) : new Date();
+          try {
+            await pool.query('INSERT INTO history (sensor_id, ts, payload) VALUES (?, ?, ?)', [sensor_id, ts, JSON.stringify(item)]);
+          } catch (err) {
+            console.error('Error insert history item:', err);
+          }
         }
+      } else if (parsed && typeof parsed === 'object') {
+        // objeto: { sensorId: [ ...entries ] }
+        const keys = Object.keys(parsed);
+        let total = 0;
+        for (const k of keys) {
+          const entries = parsed[k];
+          if (Array.isArray(entries)) {
+            for (const item of entries) {
+              const sensor_id = item.sensor_id || item.id || k;
+              const ts = item.hora ? new Date(item.hora) : new Date();
+              try {
+                await pool.query('INSERT INTO history (sensor_id, ts, payload) VALUES (?, ?, ?)', [sensor_id, ts, JSON.stringify(item)]);
+              } catch (err) {
+                console.error('Error insert history item:', err);
+              }
+              total++;
+            }
+          }
+        }
+        console.log('Registros (objeto) encontrados en history.json:', total);
+      } else {
+        console.log('history.json tiene un formato inesperado — ignorando.');
       }
+
       console.log('Migración history.json completada.');
     } else {
       console.log('No existe history.json — nada que migrar para history.');
