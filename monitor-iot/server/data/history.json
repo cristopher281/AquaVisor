@@ -1119,6 +1119,22 @@
       "hora": "2025-12-02 21:18:50",
       "ultima_actualizacion": "2025-12-03T03:18:50.534Z",
       "stored": "memory"
+    },
+    {
+      "sensor_id": "1",
+      "caudal_min": 13.9,
+      "total_acumulado": 4225.5,
+      "hora": "2025-12-02 21:18:53",
+      "ultima_actualizacion": "2025-12-03T03:18:53.544Z",
+      "stored": "memory"
+    },
+    {
+      "sensor_id": "1",
+      "caudal_min": 2.6,
+      "total_acumulado": 4226,
+      "hora": "2025-12-02 21:18:56",
+      "ultima_actualizacion": "2025-12-03T03:18:56.559Z",
+      "stored": "memory"
     }
   ],
   "2": [
@@ -2241,6 +2257,22 @@
       "hora": "2025-12-02 21:18:50",
       "ultima_actualizacion": "2025-12-03T03:18:50.751Z",
       "stored": "memory"
+    },
+    {
+      "sensor_id": "2",
+      "caudal_min": 6.1,
+      "total_acumulado": 4193.7,
+      "hora": "2025-12-02 21:18:53",
+      "ultima_actualizacion": "2025-12-03T03:18:53.755Z",
+      "stored": "memory"
+    },
+    {
+      "sensor_id": "2",
+      "caudal_min": 5.7,
+      "total_acumulado": 4196.4,
+      "hora": "2025-12-02 21:18:56",
+      "ultima_actualizacion": "2025-12-03T03:18:56.764Z",
+      "stored": "memory"
     }
   ],
   "3": [
@@ -3362,6 +3394,22 @@
       "total_acumulado": 4296.8,
       "hora": "2025-12-02 21:18:50",
       "ultima_actualizacion": "2025-12-03T03:18:50.966Z",
+      "stored": "memory"
+    },
+    {
+      "sensor_id": "3",
+      "caudal_min": 8.5,
+      "total_acumulado": 4297.3,
+      "hora": "2025-12-02 21:18:53",
+      "ultima_actualizacion": "2025-12-03T03:18:53.967Z",
+      "stored": "memory"
+    },
+    {
+      "sensor_id": "3",
+      "caudal_min": 12.8,
+      "total_acumulado": 4299.8,
+      "hora": "2025-12-02 21:18:56",
+      "ultima_actualizacion": "2025-12-03T03:18:56.972Z",
       "stored": "memory"
     }
   ]
