@@ -1,4 +1,4 @@
-# 📘 AquaVisor - Documentación de Implementación
+#  AquaVisor - Documentación de Implementación
 
 **Versión:** 1.0.0  
 **Última actualización:** Diciembre 2025  
@@ -6,7 +6,7 @@
 
 ---
 
-## 📖 Índice
+##  Índice
 
 1. [Descripción General](#-descripción-general)
 2. [Arquitectura del Sistema](#-arquitectura-del-sistema)
@@ -24,7 +24,7 @@
 
 ---
 
-## 🎯 Descripción General
+##  Descripción General
 
 **AquaVisor** es un sistema completo de monitoreo IoT diseñado para visualizar y gestionar datos de sensores ESP32 en tiempo real. El proyecto implementa una arquitectura full-stack moderna con:
 
@@ -35,17 +35,17 @@
 
 ### Características Principales
 
-✅ Monitoreo en tiempo real de múltiples sensores  
-✅ Dashboard interactivo con gráficas dinámicas  
-✅ Sistema de alertas configurable  
-✅ Generación de reportes profesionales (CSV/PDF)  
-✅ Persistencia dual (archivos JSON + MySQL opcional)  
-✅ Interfaz moderna con glassmorphism  
-✅ API RESTful completa  
+# Monitoreo en tiempo real de múltiples sensores  
+# Dashboard interactivo con gráficas dinámicas  
+# Sistema de alertas configurable  
+# Generación de reportes profesionales (CSV/PDF)  
+# Persistencia dual (archivos JSON + MySQL opcional)  
+# Interfaz moderna con glassmorphism  
+# API RESTful completa  
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+##  Arquitectura del Sistema
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -90,7 +90,7 @@
 
 ---
 
-## ⚙️ Requisitos Previos
+##  Requisitos Previos
 
 ### Software Necesario
 
@@ -107,7 +107,7 @@
 
 ---
 
-## 📥 Instalación
+##  Instalación
 
 ### 1. Clonar el Repositorio
 
@@ -186,7 +186,7 @@ export default defineConfig({
 
 ---
 
-## 🚀 Ejecución
+##  Ejecución
 
 ### Modo Desarrollo
 
@@ -234,7 +234,7 @@ echo Servidores iniciados en ventanas separadas
 
 ---
 
-## 📡 API Endpoints
+##  API Endpoints
 
 ### 1. Ingesta de Datos (ESP32)
 
@@ -441,7 +441,7 @@ ifconfig
 
 ---
 
-## 💾 Sistema de Persistencia
+##  Sistema de Persistencia
 
 ### Modo 1: Archivos JSON (Por Defecto)
 
@@ -452,10 +452,10 @@ ifconfig
 - `history.json` - Historial de lecturas (últimas 500 por sensor)
 
 **Características:**
-- ✅ Sin configuración adicional
-- ✅ Guardado automático cada 5 segundos
-- ✅ Recuperación ante fallos (SIGINT, SIGTERM)
-- ⚠️ Límite de 500 registros por sensor
+-  Sin configuración adicional
+-  Guardado automático cada 5 segundos
+-  Recuperación ante fallos (SIGINT, SIGTERM)
+-  Límite de 500 registros por sensor
 
 **Estructura sensors.json:**
 ```json
@@ -608,7 +608,7 @@ const sensors = [
 
 ---
 
-## 🌐 Despliegue en Producción
+##  Despliegue en Producción
 
 ### Opción 1: Clever Cloud
 
@@ -716,7 +716,7 @@ app.use(cors({
 
 ---
 
-## 🔍 Resolución de Problemas
+##  Resolución de Problemas
 
 ### Problema: Backend no inicia
 
@@ -796,7 +796,7 @@ cat server/data/sensors.json
 
 ---
 
-## 🚀 Mejoras Futuras
+##  Mejoras Futuras
 
 ### Alta Prioridad
 
