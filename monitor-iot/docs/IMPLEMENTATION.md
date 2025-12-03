@@ -36,13 +36,13 @@
 
 ### Características Principales
 
-# Monitoreo en tiempo real de múltiples sensores  
-# Dashboard interactivo con gráficas dinámicas  
-# Sistema de alertas configurable  
-# Generación de reportes profesionales (CSV/PDF)  
-# Persistencia dual (archivos JSON + MySQL opcional)  
-# Interfaz moderna con glassmorphism  
-# API RESTful completa  
+## Monitoreo en tiempo real de múltiples sensores  
+## Dashboard interactivo con gráficas dinámicas  
+## Sistema de alertas configurable  
+## Generación de reportes profesionales (CSV/PDF)  
+## Persistencia dual (archivos JSON + MySQL opcional)  
+## Interfaz moderna con glassmorphism  
+## API RESTful completa  
 
 ---
 
@@ -57,26 +57,26 @@
                          │ /api/sensor-data
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   BACKEND (Node.js)                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Express    │  │  Validación  │  │ Persistencia │      │
-│  │   Server     │→ │     Datos    │→ │  (Dual)      │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│         │                                     │              │
-│         │                                     ├─→ JSON       │
-│         │                                     └─→ MySQL      │
+│                   BACKEND (Node.js)                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   Express    │  │  Validación  │  │ Persistencia │       │
+│  │   Server     │→ │     Datos    │→ │  (Dual)      │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│         │                                     │             │
+│         │                                     ├─→ JSON      │
+│         │                                     └─→ MySQL     │
 └─────────┼───────────────────────────────────────────────────┘
           │ REST API
           │ /api/dashboard
           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   FRONTEND (React)                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  Dashboard   │  │   Reportes   │  │    Alertas   │      │
-│  │   Tiempo     │  │   CSV/PDF    │  │   Sistema    │      │
-│  │    Real      │  │              │  │              │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│                                                              │
+│                   FRONTEND (React)                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │  Dashboard   │  │   Reportes   │  │    Alertas   │       │
+│  │   Tiempo     │  │   CSV/PDF    │  │   Sistema    │       │
+│  │    Real      │  │              │  │              │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│                                                             │
 │  Gráficas (Recharts) + Componentes Modulares                │
 └─────────────────────────────────────────────────────────────┘
 ```
