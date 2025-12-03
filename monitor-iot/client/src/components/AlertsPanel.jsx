@@ -210,32 +210,86 @@ function AlertsPanel({ sensors }) {
                                     doc.addImage(imgData, 'PNG', margin, cursorY, imgW, imgH);
                                     cursorY += imgH + 8;
 
-                                    // Añadir tabla de sensores con sparkline + stats (limitar a 12 sensores)
-                                    const keys = Object.keys(sensorsData).slice(0, 12);
+                                    // Tabla de sensores con sparklines y estadísticas (diseño profesional)
+                                    const keys = Object.keys(sensorsData).slice(0, 24);
                                     doc.setFontSize(12); doc.text('Resumen por sensor', margin, cursorY);
-                                    cursorY += 6;
-                                    doc.setFontSize(10);
+                                    cursorY += 8;
 
-                                    const rowH = 36; const imgSparkW = 80; const col1W = 48; const col2W = imgSparkW + 8; const col3W = 60;
-                                    for (let i=0;i<keys.length;i++) {
+                                    // Column layout
+                                    const tableX = margin;
+                                    const tableYStart = cursorY;
+                                    const colWidths = {
+                                        sensor: 42,
+                                        spark: 120,
+                                        last: 48,
+                                        avg: 40,
+                                        min: 40,
+                                        max: 40,
+                                        total: 56
+                                    };
+                                    const tableW = Object.values(colWidths).reduce((a,b)=>a+b,0);
+                                    const headerH = 12;
+                                    const rowH = 44;
+
+                                    // Header row
+                                    doc.setFillColor(245,245,245);
+                                    doc.rect(tableX, cursorY, tableW, headerH, 'F');
+                                    doc.setDrawColor(200);
+                                    doc.rect(tableX, cursorY, tableW, headerH);
+                                    doc.setFontSize(10); doc.setTextColor(30);
+                                    let cx = tableX + 4;
+                                    doc.text('Sensor', cx, cursorY + 8);
+                                    cx += colWidths.sensor; doc.text('Tendencia', cx + 6, cursorY + 8);
+                                    cx += colWidths.spark; doc.text('Último', cx + 6, cursorY + 8);
+                                    cx += colWidths.last; doc.text('Avg', cx + 6, cursorY + 8);
+                                    cx += colWidths.avg; doc.text('Min', cx + 6, cursorY + 8);
+                                    cx += colWidths.min; doc.text('Max', cx + 6, cursorY + 8);
+                                    cx += colWidths.max; doc.text('Total', cx + 6, cursorY + 8);
+
+                                    cursorY += headerH;
+
+                                    // Rows
+                                    for (let i = 0; i < keys.length; i++) {
                                         const k = keys[i]; const arr = sensorsData[k] || [];
-                                        const values = arr.map(x => Number(x.caudal_min) || 0).slice(-40);
+                                        const values = arr.map(x => Number(x.caudal_min) || 0).slice(-60);
                                         const avg = values.length ? (values.reduce((a,b)=>a+b,0)/values.length) : 0;
                                         const min = values.length ? Math.min(...values) : 0;
                                         const max = values.length ? Math.max(...values) : 0;
-                                        const spark = makeSparkline(values, imgSparkW, 36);
+                                        const last = arr.length ? arr[arr.length-1] : null;
+                                        const total = last ? (last.total_acumulado || '-') : '-';
+                                        const spark = makeSparkline(values, colWidths.spark - 8, rowH - 8);
 
-                                        if (cursorY + rowH > pageH - 30) { doc.addPage(); cursorY = margin + 8; }
+                                        if (cursorY + rowH > pageH - 28) { doc.addPage(); cursorY = margin + 8; }
 
-                                        // sensor id
-                                        doc.setFontSize(11); doc.text(`${k}`, margin, cursorY + 12);
-                                        // sparkline image
-                                        doc.addImage(spark, 'PNG', margin + col1W, cursorY + 2, imgSparkW, 36);
-                                        // stats
+                                        // Row background
+                                        doc.setFillColor(255,255,255); doc.setDrawColor(220);
+                                        doc.rect(tableX, cursorY, tableW, rowH);
+
+                                        // Sensor cell
+                                        let x = tableX + 6; let y = cursorY + 14;
+                                        doc.setFontSize(11); doc.setTextColor(20);
+                                        doc.text(`${k}`, x, y);
+
+                                        // Sparkline cell (draw image)
+                                        const sparkX = tableX + colWidths.sensor + 4;
+                                        const sparkY = cursorY + 6;
+                                        try { doc.addImage(spark, 'PNG', sparkX, sparkY, colWidths.spark - 8, rowH - 12); } catch (e) { /* ignore */ }
+
+                                        // Last / stats
+                                        let sx = sparkX + colWidths.spark + 6;
                                         doc.setFontSize(10);
-                                        doc.text(`Avg: ${avg.toFixed(2)} m³/min`, margin + col1W + col2W + 4, cursorY + 10);
-                                        doc.text(`Min: ${min.toFixed(2)}`, margin + col1W + col2W + 4, cursorY + 18);
-                                        doc.text(`Max: ${max.toFixed(2)}`, margin + col1W + col2W + 4, cursorY + 26);
+                                        doc.text(last ? String(last.caudal_min) : '-', sx, cursorY + 12);
+                                        doc.text(avg.toFixed(2), sx + colWidths.last - 10, cursorY + 12);
+                                        doc.text(min.toFixed(2), sx + colWidths.last + colWidths.avg - 4, cursorY + 12);
+                                        doc.text(max.toFixed(2), sx + colWidths.last + colWidths.avg + colWidths.min + 2, cursorY + 12);
+                                        // total at far right
+                                        const totalX = tableX + tableW - colWidths.total + 6;
+                                        doc.text(String(total), totalX, cursorY + 12);
+
+                                        // small subtext row with timestamps/count
+                                        doc.setFontSize(9); doc.setTextColor(110);
+                                        doc.text(`Muestras: ${values.length}`, x, cursorY + 26);
+                                        if (last && last.ultima_actualizacion) doc.text(`${new Date(last.ultima_actualizacion).toLocaleString('es-ES')}`, x + 80, cursorY + 26);
 
                                         cursorY += rowH;
                                     }
