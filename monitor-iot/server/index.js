@@ -30,22 +30,58 @@ if (MONGO_URI) {
 
     // Intentar conectar y solo exponer el modelo si la conexión es exitosa
     mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-      .then(() => {
+      .then(async () => {
         console.log('Conectado a MongoDB');
+        try {
+          await Sensor.init(); // asegurar índices (unique)
+        } catch (e) {
+          console.warn('No se pudo inicializar índices Sensor:', e.message || e);
+        }
         app.locals.Sensor = Sensor;
         app.locals.dbConnected = true;
+        app.locals.dbBacking = 'mongo';
+
+        mongoose.connection.on('error', (err) => {
+          console.error('MongoDB connection error:', err.message || err);
+          app.locals.dbConnected = false;
+        });
+
+        mongoose.connection.on('disconnected', () => {
+          console.warn('MongoDB desconectado');
+          app.locals.dbConnected = false;
+        });
+        // Si había datos en memoria/archivo, intentar sincronizarlos a Mongo
+        try {
+          const entries = Object.entries(sensorData);
+          if (entries.length) {
+            console.log(`Sincronizando ${entries.length} sensores desde almacenamiento local hacia MongoDB...`);
+            await Promise.all(entries.map(([sid, d]) => {
+              return Sensor.findOneAndUpdate(
+                { sensor_id: sid },
+                { $set: { caudal_min: d.caudal_min, total_acumulado: d.total_acumulado, hora: d.hora, ultima_actualizacion: new Date(d.ultima_actualizacion || Date.now()) } },
+                { upsert: true, new: true }
+              ).lean();
+            }));
+            console.log('Sincronización a Mongo completada.');
+            // opcional: no eliminar archivos, conservar histórico en disco
+          }
+        } catch (e) {
+          console.warn('Error sincronizando datos locales a Mongo:', e.message || e);
+        }
       })
       .catch((err) => {
-        console.error('Error conectando a MongoDB:', err.message);
+        console.error('Error conectando a MongoDB:', err.message || err);
         app.locals.dbConnected = false;
+        app.locals.dbBacking = 'file';
       });
   } catch (err) {
     console.warn('Mongoose no está instalado o no se pudo cargar:', err.message);
     app.locals.dbConnected = false;
   }
 } else {
-  console.log('MONGO_URI no definida — usando almacenamiento en memoria (desarrollo).');
+  console.log('MONGO_URI no definida — usando almacenamiento en memoria/archivo (desarrollo).');
   app.locals.dbConnected = false;
+  app.locals.dbBacking = 'file';
 }
 
 // Middleware
@@ -77,6 +113,50 @@ app.post('/api/save-report', express.raw({ type: 'application/pdf', limit: '20mb
 const sensorData = {};
 // Historial en memoria por sensor (últimos N registros)
 const sensorHistory = {};
+
+// Persistencia en disco (fallback cuando no hay MongoDB)
+const DATA_DIR = path.join(__dirname, 'data');
+const SENSORS_FILE = path.join(DATA_DIR, 'sensors.json');
+const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
+
+function loadFromDisk() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+    if (fs.existsSync(SENSORS_FILE)) {
+      const raw = fs.readFileSync(SENSORS_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      Object.assign(sensorData, parsed);
+      console.log('Cargados sensores desde disco:', Object.keys(parsed).length);
+    }
+
+    if (fs.existsSync(HISTORY_FILE)) {
+      const raw = fs.readFileSync(HISTORY_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      Object.assign(sensorHistory, parsed);
+      console.log('Cargado historial desde disco:', Object.keys(parsed).length);
+    }
+  } catch (err) {
+    console.warn('No se pudo cargar persistencia en disco:', err.message || err);
+  }
+}
+
+function saveToDisk() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(SENSORS_FILE, JSON.stringify(sensorData, null, 2), 'utf8');
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(sensorHistory, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error guardando datos en disco:', err.message || err);
+  }
+}
+
+// Cargar al inicio
+loadFromDisk();
+
+// Guardar periódicamente (cada 5s)
+const SAVE_INTERVAL = 5000;
+const saveIntervalRef = setInterval(saveToDisk, SAVE_INTERVAL);
 
 function pushHistory(sensor_id, entry) {
   if (!sensorHistory[sensor_id]) sensorHistory[sensor_id] = [];
@@ -263,6 +343,28 @@ app.get('/api/health', (req, res) => {
 });
 
 // Iniciar servidor
+// Manejo de cierre para asegurar persistencia en disco
+function shutdownHandler(signal) {
+  try {
+    console.log(`Recibido ${signal} — guardando datos en disco y cerrando...`);
+    if (saveIntervalRef) clearInterval(saveIntervalRef);
+    saveToDisk();
+  } catch (err) {
+    console.error('Error durante shutdown:', err.message || err);
+  } finally {
+    process.exit(0);
+  }
+}
+
+process.on('SIGINT', () => shutdownHandler('SIGINT'));
+process.on('SIGTERM', () => shutdownHandler('SIGTERM'));
+process.on('exit', () => saveToDisk());
+process.on('uncaughtException', (err) => {
+  console.error('Excepción no capturada:', err);
+  saveToDisk();
+  process.exit(1);
+});
+
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
