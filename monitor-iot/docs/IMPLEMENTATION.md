@@ -113,7 +113,7 @@
 
 ```bash
 git clone https://github.com/cristopher281/AquaVisor.git
-cd Bakend-Esp32/monitor-iot
+cd AquaVisor/monitor-iot
 ```
 
 ### 2. Instalar Dependencias del Backend
