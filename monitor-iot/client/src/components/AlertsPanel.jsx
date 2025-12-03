@@ -300,6 +300,39 @@ function AlertsPanel({ sensors }) {
                                     doc.text('Reporte generado por AquaVisor', margin, pageH - 10);
 
                                     const filename = `reporte_profesional_${new Date().toISOString().replace(/[:.]/g,'-')}.pdf`;
+
+                                    // Generar blob del PDF y subir al servidor (para guardarlo en carpeta server/reports)
+                                    try {
+                                        const pdfBlobForServer = doc.output('blob');
+                                        console.log('[AlertsPanel] Subiendo PDF al servidor...');
+                                        try {
+                                            const uploadRes = await fetch('/api/save-report', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/pdf',
+                                                    'X-Filename': filename
+                                                },
+                                                body: pdfBlobForServer
+                                            });
+                                            if (uploadRes.ok) {
+                                                const json = await uploadRes.json();
+                                                console.log('[AlertsPanel] Reporte guardado en servidor:', json.path);
+                                                // Mostrar enlace al usuario
+                                                const base = window.location.origin;
+                                                const downloadUrl = base + (json.path || `/reports/${filename}`);
+                                                // Abrir enlace en nueva pestaña para que el usuario pueda descargar si lo desea
+                                                // window.open(downloadUrl, '_blank'); // opcional
+                                                alert(`Reporte guardado en servidor: ${downloadUrl}`);
+                                            } else {
+                                                console.warn('[AlertsPanel] Falló guardar en servidor, status:', uploadRes.status);
+                                            }
+                                        } catch (upErr) {
+                                            console.warn('[AlertsPanel] Error subiendo al servidor:', upErr);
+                                        }
+                                    } catch (blobErr) {
+                                        console.warn('[AlertsPanel] No se pudo generar blob para subida:', blobErr);
+                                    }
+
                                     try {
                                         console.log('[AlertsPanel] Intentando doc.save()', filename);
                                         doc.save(filename);

@@ -7,6 +7,9 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
+const fs = require('fs');
+const path = require('path');
+
 // Conectar a MongoDB si MONGO_URI está definida (opcional)
 const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || null;
 app.locals.dbConnected = false; // bandera por defecto
@@ -48,6 +51,27 @@ if (MONGO_URI) {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Servir informes guardados (si existen)
+app.use('/reports', express.static(path.join(__dirname, 'reports')));
+
+// Endpoint para guardar reportes (recibe PDF en body raw)
+app.post('/api/save-report', express.raw({ type: 'application/pdf', limit: '20mb' }), (req, res) => {
+  try {
+    const filenameHeader = req.headers['x-filename'] || '';
+    const safeName = filenameHeader ? filenameHeader.replace(/[^a-zA-Z0-9-_.]/g, '_') : `reporte_${Date.now()}.pdf`;
+    const reportsDir = path.join(__dirname, 'reports');
+    if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+    const filePath = path.join(reportsDir, safeName);
+    fs.writeFileSync(filePath, req.body);
+    const publicPath = `/reports/${safeName}`;
+    console.log(`Reporte guardado en servidor: ${filePath}`);
+    res.status(200).json({ success: true, path: publicPath, filename: safeName });
+  } catch (err) {
+    console.error('Error guardando reporte en servidor:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // Base de datos en memoria (objeto JS)
 const sensorData = {};
