@@ -16,7 +16,7 @@ Si más adelante quieres añadir un servicio gestionado (por ejemplo una base de
 
 ## Cómo debe comunicarse el ESP32 (recomendado) y alternativas
 
-Recomendación (seguridad y escalabilidad): el ESP32 debe enviar sus lecturas al Backend mediante HTTP(S) POST. El Backend se encarga de validar y persistir en MongoDB Atlas. Este patrón es el más seguro porque las credenciales de la base de datos permanecen en el servidor (o en las variables de entorno del PaaS) y no en el firmware del dispositivo.
+Recomendación (seguridad y escalabilidad): el ESP32 debe enviar sus lecturas al Backend mediante HTTP(S) POST. El Backend valida las lecturas y las persiste localmente o en una base de datos gestionada si se configura una en el entorno. Este patrón mantiene las credenciales y la lógica sensible en el servidor (o en las variables de entorno del PaaS), no en el firmware del dispositivo.
 
 Ejemplo (ya incluido anteriormente) — fragmento resumido:
 
@@ -31,8 +31,8 @@ int code = http.POST(payload);
 
 Alternativas (no recomendadas directamente desde ESP32):
 
-- Conexión directa a MongoDB Atlas: técnicamente posible solo si el dispositivo soporta TLS y un driver compatible; no es práctico ni seguro para microcontroladores.
-- Uso de MongoDB Realm (App Services): puedes crear una Function HTTPS en Realm y exponer un endpoint que el ESP32 llame. Realm puede aplicar reglas y autenticación por token y es más seguro que exponer la conexión directa.
+- Conexión directa a una base de datos gestionada: técnicamente posible solo si el dispositivo soporta TLS y un driver compatible; no es práctico ni seguro para microcontroladores.
+- Uso de un servicio de funciones o App Services: puedes crear una Function HTTPS en el proveedor de tu elección y exponer un endpoint que el ESP32 llame. Las Functions permiten aplicar reglas y autenticación por token y son más seguras que exponer la conexión directa a la base de datos.
 
 ---
 
@@ -42,7 +42,7 @@ Alternativas (no recomendadas directamente desde ESP32):
 - ESP32 → POST JSON → `POST /api/sensor-data`.
 
 2) Persistencia
-- Backend → MongoDB Atlas (upsert por `sensor_id`) o almacenamiento en memoria si no está configurada la DB.
+- Backend → base de datos gestionada (opcional, upsert por `sensor_id`) o almacenamiento en memoria si no está configurada la DB.
 
 3) Visualización
 - Frontend realiza polling a `GET /api/dashboard` cada 3s.
@@ -84,7 +84,7 @@ int code = http.POST(payload);
 
 ### Migraciones y scripts
 
-- No hay scripts activos para migrar a MongoDB; el antiguo `migrate-to-mongo.js` fue deshabilitado. Si vuelves a usar una DB gestionada, puedo recrear la migración.
+- No hay scripts activos para migrar a una base de datos externa; cualquier archivo de migración anterior fue retirado. Si decides añadir una BD gestionada, puedo preparar la migración y el script correspondiente.
 
 ### API — Endpoints principales
 
