@@ -847,13 +847,13 @@ cat server/data/sensors.json
 
 ---
 
-## 📚 Documentación Adicional
+## Documentación Adicional
 
 ### Historial de Mejoras y Correcciones
 
 Para conocer el historial completo de todas las mejoras, correcciones y optimizaciones implementadas en el proyecto, consulta:
 
-📖 **[MEJORAS-Y-CORRECCIONES.md](./MEJORAS-Y-CORRECCIONES.md)**
+ **[MEJORAS-Y-CORRECCIONES.md](./MEJORAS-Y-CORRECCIONES.md)**
 
 Este documento incluye:
 - Análisis detallado de problemas encontrados
