@@ -1,3 +1,123 @@
+``` 
+```
+---
+## Persistencia con MongoDB Atlas (activar MONGO_URI)
+
+Se ha añadido soporte opcional para persistir las lecturas en MongoDB Atlas a través de Mongoose.
+
+Pasos para activar la persistencia:
+
+1. En el servidor, copia `monitor-iot/server/.env.example` a `monitor-iot/server/.env` (si no lo has hecho ya) y rellena `MONGO_URI` con la cadena de conexión. Por ejemplo (sustituye `<db_password>` por tu contraseña real):
+
+```text
+MONGO_URI=mongodb+srv://vallecristopher102_db_user:<db_password>@cluster0.ihcrgyl.mongodb.net/acuavisor?retryWrites=true&w=majority
+PORT=4000
+```
+
+2. Reinicia el servidor para que cargue las variables de entorno:
+
+```cmd
+cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
+npm install
+npm run start
+```
+
+3. Comprobación: en la consola verás `Conectado a MongoDB` cuando la conexión se establezca correctamente. Si no se define `MONGO_URI` (o hay un error) el servidor usará almacenamiento en memoria como fallback.
+
+Detalles técnicos en el servidor:
+
+- El backend define un esquema Mongoose `Sensor` con campos: `sensor_id` (string, único), `caudal_min` (number), `total_acumulado` (number), `hora` (string) y `ultima_actualizacion` (Date).
+- En `POST /api/sensor-data` el servidor hace un `findOneAndUpdate({ sensor_id }, { $set: { ... } }, { upsert: true, new: true })` para mantener la última lectura por sensor.
+- En `GET /api/dashboard` el servidor devuelve los documentos desde la colección `sensors` si la conexión a Mongo está activa; si no, devuelve los datos en memoria.
+
+Si prefieres mantener un histórico completo de lecturas (series temporales), puedo añadir un modelo `Reading` (cada POST inserta un documento) y endpoints para consultar históricos y agregaciones.
+
+---
+
+## Cómo debe comunicarse el ESP32 (recomendado) y alternativas
+
+Recomendación (seguridad y escalabilidad): el ESP32 debe enviar sus lecturas al Backend mediante HTTP(S) POST. El Backend se encarga de validar y persistir en MongoDB Atlas. Este patrón es el más seguro porque las credenciales de la base de datos permanecen en el servidor (o en las variables de entorno del PaaS) y no en el firmware del dispositivo.
+
+Ejemplo (ya incluido anteriormente) — fragmento resumido:
+
+```cpp
+// Arduino/ESP32 (resumen)
+HTTPClient http;
+http.begin("https://tu-backend.example.com/api/sensor-data");
+http.addHeader("Content-Type", "application/json");
+String payload = "{\"sensor_id\":\"1\",\"caudal_min\":\"12.3\",\"total_acumulado\":\"42.7\",\"hora\":\"2025-12-02 10:00:00\"}";
+int code = http.POST(payload);
+```
+
+Alternativas (no recomendadas directamente desde ESP32):
+
+- Conexión directa a MongoDB Atlas: técnicamente posible solo si el dispositivo soporta TLS y un driver compatible; no es práctico ni seguro para microcontroladores.
+- Uso de MongoDB Realm (App Services): puedes crear una Function HTTPS en Realm y exponer un endpoint que el ESP32 llame. Realm puede aplicar reglas y autenticación por token y es más seguro que exponer la conexión directa.
+
+---
+
+## Lógica completa: cómo se muestran los datos en el Frontend
+
+1) Ingestión
+- ESP32 → POST JSON → `POST /api/sensor-data`.
+
+2) Persistencia
+- Backend → MongoDB Atlas (upsert por `sensor_id`) o almacenamiento en memoria si no está configurada la DB.
+
+3) Visualización
+- Frontend realiza polling a `GET /api/dashboard` cada 3s.
+- Ejemplo de consumo en React (simplificado):
+
+```js
+async function fetchDashboard() {
+  const res = await fetch('/api/dashboard');
+  const body = await res.json();
+  if (body.success) setSensors(body.data);
+}
+
+useEffect(() => {
+  fetchDashboard();
+  const id = setInterval(fetchDashboard, 3000);
+  return () => clearInterval(id);
+}, []);
+
+// Render
+{sensors.map(s => (
+  <SensorCard key={s.sensor_id} sensor={s} />
+))}
+```
+
+En `SensorCard` mostrar campos:
+- `sensor.caudal_min`
+- `sensor.total_acumulado`
+- `new Date(sensor.ultima_actualizacion).toLocaleString()`
+
+Si implementas un modelo `Reading` para histórico, el frontend puede pedir `GET /api/readings?sensor_id=1&limit=100` y dibujar series temporales con Recharts.
+
+---
+
+## Añadir la connection string al entorno de Render (PaaS)
+
+En Render (u otro PaaS) debes configurar las variables de entorno en el panel de configuración del servicio web:
+
+- Key: `MONGO_URI`
+- Value: `mongodb+srv://vallecristopher102_db_user:<db_password>@cluster0.ihcrgyl.mongodb.net/acuavisor?retryWrites=true&w=majority`
+
+No subas el `.env` al repositorio. Las variables inyectadas por el panel de Render serán accesibles para el proceso y la app se conectará automáticamente.
+
+---
+
+Si quieres, implemento ahora (elige):
+
+- [A] Guardar cada lectura histórica en una colección `readings` en lugar de sobrescribir (añadir modelo `Reading` y endpoint `GET /api/readings`).
+- [B] Añadir autenticación simple (API key) para `POST /api/sensor-data` y documentar cómo configurar la clave en los ESP32.
+- [C] Añadir instrucciones paso a paso para crear el usuario `vallecristopher102_db_user` en MongoDB Atlas y ajustar IP Access/Network Rules.
+
+---
+
+Fin de la documentación actualizada.
+
+``` 
 # AquaVisor — Documentación de implementación
 
 Esta documentación describe la arquitectura del proyecto, qué hace cada pieza de código, cómo ejecutar el sistema localmente y cómo probar sin hardware (simulador). Está escrita en español para desarrollo local.
