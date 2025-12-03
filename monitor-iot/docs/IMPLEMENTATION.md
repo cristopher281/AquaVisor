@@ -107,6 +107,44 @@ No subas el `.env` al repositorio. Las variables inyectadas por el panel de Rend
 
 ---
 
+## Despliegue y uso de Clever Cloud como base de datos
+
+Si quieres usar Clever Cloud como plataforma y su servicio gestionado de bases de datos (o un addon MongoDB compatible), estos son los pasos recomendados. El backend del proyecto ya soporta MongoDB vía `MONGO_URI` y el script `migrate-to-mongo.js` permite migrar los datos actuales en `server/data/sensors.json` hacia la base de datos.
+
+Pasos generales:
+
+1. En Clever Cloud crea una nueva aplicación Node.js (o conecta tu repositorio Git existente). Sigue el asistente para crear la app.
+2. Añade un servicio de base de datos MongoDB (o un addon compatible). Clever Cloud suele ofrecer integraciones o permitir añadir servicios gestionados; obtén la cadena de conexión (URI) que te provea el servicio.
+3. En la sección de variables de entorno de tu aplicación en Clever Cloud, añade `MONGO_URI` con la URI provista por el servicio.
+4. Asegúrate de que `package.json` incluya `mongoose` en `dependencies` (este repositorio ya lo incluye). Clever Cloud instalará dependencias automáticamente en el deploy.
+5. Despliega la app a Clever Cloud (push a la rama configurada o usa la interfaz/CLI de Clever Cloud).
+
+Comprobación y migración de datos existentes (localmente):
+
+- Instala dependencias y prepara `MONGO_URI` localmente:
+
+```cmd
+cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
+npm install
+set MONGO_URI=mongodb://<usuario>:<pass>@<host>:<puerto>/<db>
+```
+
+- Ejecuta la migración de los sensores que están en `data/sensors.json` hacia MongoDB:
+
+```cmd
+npm run migrate:to-mongo
+```
+
+- Verifica en la consola que se conectó (`Conectado a MongoDB para migración.`) y que cada sensor fue migrado.
+
+Después de desplegar en Clever Cloud con `MONGO_URI` configurado, la app intentará conectarse automáticamente a Mongo en el arranque. Verifica los logs de la app en Clever Cloud para observar `Conectado a MongoDB`.
+
+Nota de seguridad: guarda las credenciales de la base de datos en las variables de entorno provistas por Clever Cloud y no las incluyas en el repositorio.
+
+Si quieres, puedo generar los archivos y scripts necesarios para automatizar el despliegue (por ejemplo un `clevercloud.json` o instrucciones con la CLI `clever-tools`) y añadir un pequeño paso en CI para ejecutar la migración en el momento del despliegue.
+
+---
+
 Si quieres, implemento ahora (elige):
 
 - [A] Guardar cada lectura histórica en una colección `readings` en lugar de sobrescribir (añadir modelo `Reading` y endpoint `GET /api/readings`).

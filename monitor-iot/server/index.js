@@ -10,79 +10,11 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const fs = require('fs');
 const path = require('path');
 
-// Conectar a MongoDB si MONGO_URI está definida (opcional)
-const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || null;
-app.locals.dbConnected = false; // bandera por defecto
-if (MONGO_URI) {
-  try {
-    const mongoose = require('mongoose');
-
-    // Definir esquema y modelo para lecturas de sensores (upsert por sensor_id)
-    const sensorSchema = new mongoose.Schema({
-      sensor_id: { type: String, required: true, unique: true },
-      caudal_min: { type: Number, required: true },
-      total_acumulado: { type: Number, required: true },
-      hora: { type: String },
-      ultima_actualizacion: { type: Date, default: Date.now }
-    }, { timestamps: true });
-
-    const Sensor = mongoose.models.Sensor || mongoose.model('Sensor', sensorSchema);
-
-    // Intentar conectar y solo exponer el modelo si la conexión es exitosa
-    mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-      .then(async () => {
-        console.log('Conectado a MongoDB');
-        try {
-          await Sensor.init(); // asegurar índices (unique)
-        } catch (e) {
-          console.warn('No se pudo inicializar índices Sensor:', e.message || e);
-        }
-        app.locals.Sensor = Sensor;
-        app.locals.dbConnected = true;
-        app.locals.dbBacking = 'mongo';
-
-        mongoose.connection.on('error', (err) => {
-          console.error('MongoDB connection error:', err.message || err);
-          app.locals.dbConnected = false;
-        });
-
-        mongoose.connection.on('disconnected', () => {
-          console.warn('MongoDB desconectado');
-          app.locals.dbConnected = false;
-        });
-        // Si había datos en memoria/archivo, intentar sincronizarlos a Mongo
-        try {
-          const entries = Object.entries(sensorData);
-          if (entries.length) {
-            console.log(`Sincronizando ${entries.length} sensores desde almacenamiento local hacia MongoDB...`);
-            await Promise.all(entries.map(([sid, d]) => {
-              return Sensor.findOneAndUpdate(
-                { sensor_id: sid },
-                { $set: { caudal_min: d.caudal_min, total_acumulado: d.total_acumulado, hora: d.hora, ultima_actualizacion: new Date(d.ultima_actualizacion || Date.now()) } },
-                { upsert: true, new: true }
-              ).lean();
-            }));
-            console.log('Sincronización a Mongo completada.');
-            // opcional: no eliminar archivos, conservar histórico en disco
-          }
-        } catch (e) {
-          console.warn('Error sincronizando datos locales a Mongo:', e.message || e);
-        }
-      })
-      .catch((err) => {
-        console.error('Error conectando a MongoDB:', err.message || err);
-        app.locals.dbConnected = false;
-        app.locals.dbBacking = 'file';
-      });
-  } catch (err) {
-    console.warn('Mongoose no está instalado o no se pudo cargar:', err.message);
-    app.locals.dbConnected = false;
-  }
-} else {
-  console.log('MONGO_URI no definida — usando almacenamiento en memoria/archivo (desarrollo).');
-  app.locals.dbConnected = false;
-  app.locals.dbBacking = 'file';
-}
+// Persistencia exclusiva en disco (archivos JSON)
+// Nota: se eliminó el soporte a MongoDB por decisión del deploy (solo almacenamiento en Clever Cloud/filesystem)
+app.locals.dbConnected = false;
+app.locals.dbBacking = 'file';
+console.log('Persistencia: almacenamiento en disco (sistema de archivos local) activo. Soporte MongoDB eliminado.');
 
 // Middleware
 app.use(cors());
@@ -340,6 +272,18 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     sensores_activos: Object.keys(sensorData).length
   });
+});
+
+// Endpoint sencillo para conocer el estado de la conexión a la base de datos
+app.get('/api/db-status', (req, res) => {
+  try {
+    const dbConnected = !!req.app.locals.dbConnected;
+    const dbBacking = req.app.locals.dbBacking || 'file';
+    res.status(200).json({ success: true, dbConnected, dbBacking });
+  } catch (err) {
+    console.error('Error obteniendo estado DB:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Iniciar servidor
