@@ -2,7 +2,7 @@
     "name": "acuavisor-client",
     "version": "1.0.0",
     "type": "module",
-    "description": "Frontend React para monitoreo de sensores ESP32 - AcuaVisor",
+    "description": "Frontend React para monitoreo de sensores ESP32 - AquaVisor",
     "scripts": {
         "dev": "vite",
         "build": "vite build",

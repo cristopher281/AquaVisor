@@ -15,7 +15,7 @@ function Sidebar() {
             <div className="sidebar-header">
                 <div className="logo">
                     <div className="logo-icon"><FiDroplet /></div>
-                    <h2>AcuaVisor</h2>
+                    <h2>AquaVisor</h2>
                 </div>
                 <p className="logo-subtitle">Sistema de Control</p>
             </div>

@@ -96,7 +96,7 @@ function CommandCenter() {
   return (
     <div className="page command-center">
       <header className="page-header">
-        <h1>Centro de Comando AcuaVisor</h1>
+        <h1>Centro de Comando AquaVisor</h1>
       </header>
 
       {loading ? (

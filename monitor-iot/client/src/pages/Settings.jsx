@@ -125,7 +125,7 @@ function Settings() {
 
         <section className="card">
           <h3 className="card-title">MODIFICACIÓN DE COLORES DEL SISTEMA</h3>
-          <p className="card-sub">Personaliza la apariencia de la interfaz de AcuaVisor.</p>
+          <p className="card-sub">Personaliza la apariencia de la interfaz de AquaVisor.</p>
 
           <div className="themes">
             <div className={`theme-tile ${state.colorTheme === 'estandar' ? 'selected' : ''}`} onClick={() => selectTheme('estandar')}>
