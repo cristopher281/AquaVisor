@@ -47,12 +47,32 @@ function Reports() {
       ) : (
         <div className="reports-grid">
           <div className="reports-chart">
-            <div style={{ marginBottom: 12 }}>
-              <label>Sensor: </label>
-              <select value={selectedSensor || ''} onChange={e => setSelectedSensor(e.target.value)}>
-                {Object.keys(reports).length === 0 && <option value="">(sin datos)</option>}
-                {Object.keys(reports).map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
+            <div style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div>
+                <label>Sensor: </label>
+                <select value={selectedSensor || ''} onChange={e => setSelectedSensor(e.target.value)}>
+                  {Object.keys(reports).length === 0 && <option value="">(sin datos)</option>}
+                  {Object.keys(reports).map(k => <option key={k} value={k}>{k}</option>)}
+                </select>
+              </div>
+              <div>
+                <button onClick={() => {
+                  // Exportar CSV del sensor seleccionado (cliente-side)
+                  if (!selectedSensor || !reports[selectedSensor]) { alert('Selecciona un sensor con datos'); return; }
+                  const arr = reports[selectedSensor];
+                  const rows = [];
+                  rows.push(['timestamp','sensor_id','hora','caudal_min','total_acumulado']);
+                  arr.forEach(it => rows.push([it.ultima_actualizacion || '', selectedSensor, it.hora || '', it.caudal_min || '', it.total_acumulado || '']));
+                  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `historial_${selectedSensor}_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
+                  document.body.appendChild(a);
+                  a.click(); a.remove(); URL.revokeObjectURL(url);
+                }}>Exportar CSV</button>
+              </div>
             </div>
             <Chart data={chartData} title={`Rendimiento Histórico: ${selectedSensor || ''}`} currentValue={`${chartData.length ? chartData[chartData.length-1].value : '-'} m³`} />
           </div>

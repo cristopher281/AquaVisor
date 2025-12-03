@@ -194,6 +194,41 @@ app.get('/api/reports', (req, res) => {
   }
 });
 
+/**
+ * Generar reporte técnico descargable (CSV)
+ * GET /api/generate-report
+ */
+app.get('/api/generate-report', (req, res) => {
+  try {
+    const lines = [];
+    // Cabecera con metadatos
+    lines.push(`# Reporte Técnico AquaVisor`);
+    lines.push(`# Generated: ${new Date().toISOString()}`);
+    lines.push('timestamp,sensor_id,hora,caudal_min,total_acumulado,stored');
+
+    Object.entries(sensorHistory).forEach(([sensor_id, arr]) => {
+      arr.forEach(entry => {
+        const ts = entry.ultima_actualizacion || new Date().toISOString();
+        const hora = entry.hora ? String(entry.hora).replace(/,/g, '') : '';
+        const caudal = entry.caudal_min !== undefined ? String(entry.caudal_min) : '';
+        const total = entry.total_acumulado !== undefined ? String(entry.total_acumulado) : '';
+        const stored = entry.stored || '';
+        lines.push(`${ts},${sensor_id},${hora},${caudal},${total},${stored}`);
+      });
+    });
+
+    const csv = lines.join('\n');
+    const filename = `reporte_tecnico_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+  } catch (err) {
+    console.error('Error generando reporte técnico:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Endpoint de salud del servidor
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 

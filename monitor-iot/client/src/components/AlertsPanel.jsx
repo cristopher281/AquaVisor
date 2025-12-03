@@ -97,7 +97,28 @@ function AlertsPanel({ sensors }) {
                 ))}
             </div>
 
-            <button className="view-all-button">
+            <button className="view-all-button" onClick={async () => {
+                try {
+                    const res = await fetch('/api/generate-report');
+                    if (!res.ok) throw new Error('Error generando reporte');
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const disposition = res.headers.get('content-disposition') || '';
+                    let filename = 'reporte_tecnico.csv';
+                    const match = /filename\*=UTF-8''(.+)$/.exec(disposition) || /filename="?([^";]+)"?/.exec(disposition);
+                    if (match && match[1]) filename = decodeURIComponent(match[1]);
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } catch (err) {
+                    console.error(err);
+                    alert('Error generando el reporte técnico. Revisa la consola.');
+                }
+            }}>
                 <span>Generar Reporte Técnico</span>
                 <span className="button-arrow">→</span>
             </button>
