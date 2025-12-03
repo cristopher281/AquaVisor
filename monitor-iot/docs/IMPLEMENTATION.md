@@ -1,9 +1,9 @@
 ``` 
 ```
 ---
-## Persistencia: archivos locales (MongoDB eliminado)
+## Persistencia: archivos locales (soporte a conexiones externas eliminado)
 
-Por decisión de despliegue se ha eliminado el soporte para MongoDB en este proyecto. La persistencia ahora se realiza exclusivamente en archivos JSON dentro de `monitor-iot/server/data` (`sensors.json` y `history.json`).
+Por decisión de despliegue se ha eliminado el soporte para conexiones directas a bases de datos externas en este proyecto. La persistencia ahora se realiza exclusivamente en archivos JSON dentro de `monitor-iot/server/data` (`sensors.json` y `history.json`).
 
 Puntos clave:
 - El servidor guarda el estado actual de sensores en `sensors.json` y el historial en `history.json`.
@@ -48,7 +48,7 @@ Alternativas (no recomendadas directamente desde ESP32):
 - Frontend realiza polling a `GET /api/dashboard` cada 3s.
 ## AquaVisor — Implementación (limpia, actual)
 
-Este documento resume la arquitectura actual del proyecto y cómo ejecutarlo. El soporte a MongoDB fue retirado del código; la persistencia es por archivos JSON en `monitor-iot/server/data/`.
+Este documento resume la arquitectura actual del proyecto y cómo ejecutarlo. El soporte a conexiones directas a bases de datos externas fue retirado del código; la persistencia es por archivos JSON en `monitor-iot/server/data/`.
 
 ### Persistencia
 
@@ -132,7 +132,7 @@ Si quieres, quito también las últimas referencias a Mongo en el repositorio (p
 
   ## Mejoras propuestas (priorizadas)
 
-  1. Persistencia: migrar a una base de datos (SQLite o MongoDB) para mantener histórico.
+  1. Persistencia: migrar a una base de datos (por ejemplo SQLite o una base de datos gestionada) para mantener histórico.
   2. Autenticación: API keys para el endpoint de ingestión.
   3. Reemplazar polling por WebSockets para mejorar latencia y reducir carga.
   4. Añadir un endpoint `POST /api/settings` para persistencia de configuraciones de usuario en servidor.

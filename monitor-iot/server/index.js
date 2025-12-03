@@ -45,7 +45,7 @@ const sensorData = {};
 // Historial en memoria por sensor (últimos N registros)
 const sensorHistory = {};
 
-// Persistencia en disco (fallback cuando no hay MongoDB)
+// Persistencia en disco (fallback cuando no hay conexión a una base de datos externa)
 const DATA_DIR = path.join(__dirname, 'data');
 const SENSORS_FILE = path.join(DATA_DIR, 'sensors.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
