@@ -1,4 +1,5 @@
 import React from 'react';
+import { FiActivity, FiDroplet } from 'react-icons/fi';
 import './SensorCard.css';
 
 function SensorCard({ sensor }) {
@@ -9,25 +10,44 @@ function SensorCard({ sensor }) {
   return (
     <div className="sensor-card">
       <div className="sensor-card-header">
-        <span className="sensor-id">Sensor {sensor_id}</span>
-        <span className="sensor-status">Operativo</span>
+        <div className="sensor-id-wrapper">
+          <FiDroplet className="sensor-icon" />
+          <span className="sensor-id">Sensor {sensor_id}</span>
+        </div>
+        <span className="sensor-status">
+          <span className="status-dot"></span>
+          Operativo
+        </span>
       </div>
 
       <div className="sensor-card-body">
-        <div className="metric">
-          <div className="metric-label">Caudal (m³/min)</div>
-          <div className="metric-value">{caudal_min !== undefined ? caudal_min : '-'} </div>
+        <div className="metric-primary">
+          <div className="metric-icon-wrapper">
+            <FiActivity className="metric-icon" />
+          </div>
+          <div className="metric-content">
+            <div className="metric-label">Caudal</div>
+            <div className="metric-value-large">
+              {caudal_min !== undefined ? caudal_min : '-'}
+              <span className="metric-unit">m³/min</span>
+            </div>
+          </div>
         </div>
 
-        <div className="metric">
-          <div className="metric-label">Total Acumulado</div>
-          <div className="metric-value">{total_acumulado !== undefined ? total_acumulado : '-'} </div>
+        <div className="metric-secondary">
+          <div className="metric-item">
+            <div className="metric-label-small">Total Acumulado</div>
+            <div className="metric-value-medium">
+              {total_acumulado !== undefined ? total_acumulado : '-'}
+            </div>
+          </div>
+          <div className="metric-item">
+            <div className="metric-label-small">Última Actualización</div>
+            <div className="metric-value-small">
+              {ultima_actualizacion ? new Date(ultima_actualizacion).toLocaleTimeString('es-ES') : hora || '-'}
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="sensor-card-footer">
-        <small className="sensor-time">Hora: {hora || '-'}</small>
-        <small className="sensor-updated">Última: {ultima_actualizacion ? new Date(ultima_actualizacion).toLocaleTimeString('es-ES') : '-'}</small>
       </div>
     </div>
   );
