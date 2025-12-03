@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import './Sidebar.css';
 import { Link } from 'react-router-dom';
-import { FiBarChart2, FiFileText, FiBell, FiSettings, FiDroplet, FiUser } from 'react-icons/fi';
+import { FiBarChart2, FiFileText, FiBell, FiSettings, FiDroplet, FiMenu, FiX } from 'react-icons/fi';
 
 function Sidebar() {
+    const [isOpen, setIsOpen] = useState(false);
+
     const menuItems = [
         { to: '/', icon: <FiBarChart2 />, label: 'Centro comando' },
         { to: '/reportes', icon: <FiFileText />, label: 'Reportes' },
@@ -10,27 +13,49 @@ function Sidebar() {
         { to: '/config', icon: <FiSettings />, label: 'Configuración' },
     ];
 
+    const toggleSidebar = () => {
+        setIsOpen(!isOpen);
+    };
+
+    const closeSidebar = () => {
+        setIsOpen(false);
+    };
+
     return (
-        <aside className="sidebar glass">
-            <div className="sidebar-header">
-                <div className="logo">
-                    <div className="logo-icon"><FiDroplet /></div>
-                    <h2>AquaVisor</h2>
+        <>
+            {/* Mobile Menu Button */}
+            <button className="mobile-menu-btn" onClick={toggleSidebar}>
+                {isOpen ? <FiX /> : <FiMenu />}
+            </button>
+
+            {/* Overlay for mobile */}
+            {isOpen && <div className="sidebar-overlay" onClick={closeSidebar}></div>}
+
+            {/* Sidebar */}
+            <aside className={`sidebar glass ${isOpen ? 'sidebar-open' : ''}`}>
+                <div className="sidebar-header">
+                    <div className="logo">
+                        <div className="logo-icon"><FiDroplet /></div>
+                        <h2>AquaVisor</h2>
+                    </div>
+                    <p className="logo-subtitle">Sistema de Control</p>
                 </div>
-                <p className="logo-subtitle">Sistema de Control</p>
-            </div>
 
-            <nav className="sidebar-nav">
-                {menuItems.map((item) => (
-                    <Link key={item.to} to={item.to} className={`nav-item`}>
-                        <span className="nav-icon icon">{item.icon}</span>
-                        <span className="nav-label">{item.label}</span>
-                    </Link>
-                ))}
-            </nav>
-
-            {/* footer removed: user/avatar section hidden per request */}
-        </aside>
+                <nav className="sidebar-nav">
+                    {menuItems.map((item) => (
+                        <Link
+                            key={item.to}
+                            to={item.to}
+                            className="nav-item"
+                            onClick={closeSidebar}
+                        >
+                            <span className="nav-icon icon">{item.icon}</span>
+                            <span className="nav-label">{item.label}</span>
+                        </Link>
+                    ))}
+                </nav>
+            </aside>
+        </>
     );
 }
 
