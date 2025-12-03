@@ -5,6 +5,7 @@ import AlertsPanel from '../components/AlertsPanel';
 import WaterQualityMetrics from '../components/WaterQualityMetrics';
 import SensorHealth from '../components/SensorHealth';
 import SensorCard from '../components/SensorCard';
+import ThreeSensorPanel from '../components/ThreeSensorPanel';
 import './pages.css';
 
 function CommandCenter() {
@@ -62,7 +63,7 @@ function CommandCenter() {
               </div>
 
               <div className="sensors-list">
-                {sensors.map(s => <SensorCard key={s.sensor_id} sensor={s} />)}
+                <ThreeSensorPanel sensors={sensors.slice(0, 3)} />
               </div>
             </div>
 

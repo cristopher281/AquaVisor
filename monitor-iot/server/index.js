@@ -9,12 +9,10 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 // Conectar a MongoDB si MONGO_URI está definida (opcional)
 const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || null;
+app.locals.dbConnected = false; // bandera por defecto
 if (MONGO_URI) {
   try {
     const mongoose = require('mongoose');
-    mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-      .then(() => console.log('Conectado a MongoDB'))
-      .catch((err) => console.error('Error conectando a MongoDB:', err.message));
 
     // Definir esquema y modelo para lecturas de sensores (upsert por sensor_id)
     const sensorSchema = new mongoose.Schema({
@@ -25,19 +23,26 @@ if (MONGO_URI) {
       ultima_actualizacion: { type: Date, default: Date.now }
     }, { timestamps: true });
 
-    // Si el modelo ya existe (re-ejecuciones en dev), usarlo
-    try {
-      mongoose.model('Sensor');
-    } catch (e) {}
     const Sensor = mongoose.models.Sensor || mongoose.model('Sensor', sensorSchema);
 
-    // Exponer el modelo en app.locals para uso en handlers
-    app.locals.Sensor = Sensor;
+    // Intentar conectar y solo exponer el modelo si la conexión es exitosa
+    mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+      .then(() => {
+        console.log('Conectado a MongoDB');
+        app.locals.Sensor = Sensor;
+        app.locals.dbConnected = true;
+      })
+      .catch((err) => {
+        console.error('Error conectando a MongoDB:', err.message);
+        app.locals.dbConnected = false;
+      });
   } catch (err) {
     console.warn('Mongoose no está instalado o no se pudo cargar:', err.message);
+    app.locals.dbConnected = false;
   }
 } else {
   console.log('MONGO_URI no definida — usando almacenamiento en memoria (desarrollo).');
+  app.locals.dbConnected = false;
 }
 
 // Middleware
@@ -84,9 +89,10 @@ app.post('/api/sensor-data', (req, res) => {
       ultima_actualizacion: new Date().toISOString()
     };
 
-    // Si hay conexión a Mongo, persistir con upsert; si no, usar memoria
+    // Si hay conexión a Mongo (conexión establecida), persistir con upsert; si no, usar memoria
     const Sensor = req.app.locals.Sensor;
-    if (Sensor) {
+    const dbConnected = req.app.locals.dbConnected;
+    if (Sensor && dbConnected) {
       Sensor.findOneAndUpdate(
         { sensor_id: data.sensor_id },
         { $set: { caudal_min: data.caudal_min, total_acumulado: data.total_acumulado, hora: data.hora, ultima_actualizacion: new Date() } },
