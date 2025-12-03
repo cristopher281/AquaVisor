@@ -1,36 +1,16 @@
 ``` 
 ```
 ---
-## Persistencia con MongoDB Atlas (activar MONGO_URI)
+## Persistencia: archivos locales (MongoDB eliminado)
 
-Se ha añadido soporte opcional para persistir las lecturas en MongoDB Atlas a través de Mongoose.
+Por decisión de despliegue se ha eliminado el soporte para MongoDB en este proyecto. La persistencia ahora se realiza exclusivamente en archivos JSON dentro de `monitor-iot/server/data` (`sensors.json` y `history.json`).
 
-Pasos para activar la persistencia:
+Puntos clave:
+- El servidor guarda el estado actual de sensores en `sensors.json` y el historial en `history.json`.
+- No hay dependencias ni scripts relacionados con MongoDB en el servidor.
+- Si despliegas en Clever Cloud ten en cuenta que el sistema de archivos puede ser efímero: los ficheros locales pueden perderse al escalar o redeployar. Para persistencia duradera en Clever Cloud te recomiendo usar un servicio de almacenamiento o base de datos gestionada del PaaS (no incluida en este repositorio).
 
-1. En el servidor, copia `monitor-iot/server/.env.example` a `monitor-iot/server/.env` (si no lo has hecho ya) y rellena `MONGO_URI` con la cadena de conexión. Por ejemplo (sustituye `<db_password>` por tu contraseña real):
-
-```text
-MONGO_URI=mongodb+srv://vallecristopher102_db_user:<db_password>@cluster0.ihcrgyl.mongodb.net/acuavisor?retryWrites=true&w=majority
-PORT=4000
-```
-
-2. Reinicia el servidor para que cargue las variables de entorno:
-
-```cmd
-cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
-npm install
-npm run start
-```
-
-3. Comprobación: en la consola verás `Conectado a MongoDB` cuando la conexión se establezca correctamente. Si no se define `MONGO_URI` (o hay un error) el servidor usará almacenamiento en memoria como fallback.
-
-Detalles técnicos en el servidor:
-
-- El backend define un esquema Mongoose `Sensor` con campos: `sensor_id` (string, único), `caudal_min` (number), `total_acumulado` (number), `hora` (string) y `ultima_actualizacion` (Date).
-- En `POST /api/sensor-data` el servidor hace un `findOneAndUpdate({ sensor_id }, { $set: { ... } }, { upsert: true, new: true })` para mantener la última lectura por sensor.
-- En `GET /api/dashboard` el servidor devuelve los documentos desde la colección `sensors` si la conexión a Mongo está activa; si no, devuelve los datos en memoria.
-
-Si prefieres mantener un histórico completo de lecturas (series temporales), puedo añadir un modelo `Reading` (cada POST inserta un documento) y endpoints para consultar históricos y agregaciones.
+Si más adelante quieres añadir un servicio gestionado (por ejemplo una base de datos relacional o NoSQL) puedo adaptar el backend para ese servicio específico.
 
 ---
 
