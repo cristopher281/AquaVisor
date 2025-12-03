@@ -29,15 +29,7 @@ function Sidebar() {
                 ))}
             </nav>
 
-            <div className="sidebar-footer">
-                <div className="user-info">
-                    <div className="user-avatar"><FiUser /></div>
-                    <div className="user-details">
-                        <p className="user-name">Admin</p>
-                        <p className="user-role">Sistema</p>
-                    </div>
-                </div>
-            </div>
+            {/* footer removed: user/avatar section hidden per request */}
         </aside>
     );
 }
