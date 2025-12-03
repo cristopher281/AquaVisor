@@ -12,25 +12,45 @@
 .main-card {
   padding: 18px;
   border-radius: 10px;
-  background: var(--panel-bg, rgba(255,255,255,0.02));
-  color: var(--text, #e6eef8);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-normal);
+}
+
+.main-card:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .main-card-header h3 {
   margin: 0 0 8px 0;
   font-size: 1rem;
-  color: var(--muted, #9aa4b2);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .total-value {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 6px;
+  color: var(--text-primary);
 }
 
 .total-note {
   font-size: 0.85rem;
-  color: var(--muted, #9aa4b2);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.main-source {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  font-weight: 500;
 }
 
 .secondary-sensors {
@@ -47,9 +67,34 @@
 .placeholder {
   padding: 18px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.02);
-  color: var(--muted, #9aa4b2);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
   text-align: center;
+  font-size: 0.85rem;
+}
+
+/* Mejoras específicas para tema claro */
+[data-theme="claro"] .main-card {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="claro"] .main-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme="claro"] .total-value {
+  color: #0f172a;
+}
+
+[data-theme="claro"] .main-card-header h3 {
+  color: #475569;
+}
+
+[data-theme="claro"] .total-note,
+[data-theme="claro"] .main-source {
+  color: #64748b;
 }
 
 @media (max-width: 900px) {
