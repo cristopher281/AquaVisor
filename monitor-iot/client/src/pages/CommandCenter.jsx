@@ -11,6 +11,7 @@ import './pages.css';
 function CommandCenter() {
   const [sensors, setSensors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState([]);
 
   const fetchDashboard = async () => {
     try {
@@ -51,6 +52,27 @@ function CommandCenter() {
         });
 
         setSensors(ordered);
+
+        // Actualizar datos para la gráfica: usar el sensor principal o sumar secundarios
+        const mainForChart = main;
+        let chartValue = null;
+        if (mainForChart && mainForChart.caudal_min !== null && mainForChart.caudal_min !== undefined) {
+          chartValue = Number(mainForChart.caudal_min);
+        } else {
+          const a = sec1 && sec1.caudal_min ? Number(sec1.caudal_min) : 0;
+          const b = sec2 && sec2.caudal_min ? Number(sec2.caudal_min) : 0;
+          chartValue = a + b;
+        }
+
+        const timeLabel = new Date().toLocaleTimeString('es-ES');
+        if (chartValue !== null && !Number.isNaN(chartValue)) {
+          setChartData(prev => {
+            const next = [...prev, { time: timeLabel, value: Number(chartValue.toFixed(2)) }];
+            // mantener último N puntos
+            const MAX = 30;
+            return next.slice(-MAX);
+          });
+        }
       }
     } catch (err) {
       console.error(err);
@@ -90,7 +112,7 @@ function CommandCenter() {
 
           <div className="dashboard-grid">
             <div className="chart-section">
-              <Chart data={[]} title="DINÁMICA NIVEL TANQUE" currentValue={`${metrics.averageFlow} m³`} />
+              <Chart data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length-1].value : metrics.averageFlow} m³`} />
 
               <div className="bottom-metrics">
                 <WaterQualityMetrics />
