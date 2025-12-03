@@ -2,20 +2,38 @@ import React, { useEffect, useState } from 'react';
 import Chart from '../components/Chart';
 
 function Reports() {
-  const [sensors, setSensors] = useState([]);
+  const [reports, setReports] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [selectedSensor, setSelectedSensor] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/dashboard');
+        const res = await fetch('/api/reports');
         const json = await res.json();
-        if (json.success) setSensors(json.data);
+        if (json.success) {
+          setReports(json.data || {});
+          const first = Object.keys(json.data || {})[0] || null;
+          setSelectedSensor(first);
+        }
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
+    // actualizar cada 5s
+    const iv = setInterval(fetchData, 5000);
+    return () => clearInterval(iv);
   }, []);
+
+  const flattened = [];
+  Object.entries(reports).forEach(([sid, arr]) => {
+    arr.forEach(item => flattened.push({ sensor_id: sid, ...item }));
+  });
+
+  const chartData = selectedSensor && reports[selectedSensor] ? reports[selectedSensor].map(r => ({ time: r.hora || new Date(r.ultima_actualizacion).toLocaleTimeString('es-ES'), value: Number(r.caudal_min) })) : [];
 
   return (
     <div className="page reports">
@@ -24,35 +42,49 @@ function Reports() {
         <p>Genera, filtra y exporta datos históricos y de rendimiento.</p>
       </header>
 
-      <div className="reports-grid">
-        <div className="reports-chart">
-          <Chart data={[]} title="Rendimiento Histórico: Nivel de Agua" />
-        </div>
+      {loading ? (
+        <p>Cargando reportes...</p>
+      ) : (
+        <div className="reports-grid">
+          <div className="reports-chart">
+            <div style={{ marginBottom: 12 }}>
+              <label>Sensor: </label>
+              <select value={selectedSensor || ''} onChange={e => setSelectedSensor(e.target.value)}>
+                {Object.keys(reports).length === 0 && <option value="">(sin datos)</option>}
+                {Object.keys(reports).map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+            <Chart data={chartData} title={`Rendimiento Histórico: ${selectedSensor || ''}`} currentValue={`${chartData.length ? chartData[chartData.length-1].value : '-'} m³`} />
+          </div>
 
-        <div className="reports-table">
-          <h3>Datos Históricos</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Sensor</th>
-                <th>Caudal (m³/min)</th>
-                <th>Total Acumulado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sensors.map(s => (
-                <tr key={s.sensor_id}>
-                  <td>{s.hora}</td>
-                  <td>{s.sensor_id}</td>
-                  <td>{s.caudal_min}</td>
-                  <td>{s.total_acumulado}</td>
+          <div className="reports-table">
+            <h3>Datos Históricos</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Sensor</th>
+                  <th>Caudal (m³/min)</th>
+                  <th>Total Acumulado</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {flattened.length === 0 && (
+                  <tr><td colSpan={4}>No hay datos históricos disponibles.</td></tr>
+                )}
+                {flattened.map((s, idx) => (
+                  <tr key={`${s.sensor_id}-${idx}`}>
+                    <td>{s.hora || new Date(s.ultima_actualizacion).toLocaleString('es-ES')}</td>
+                    <td>{s.sensor_id}</td>
+                    <td>{s.caudal_min}</td>
+                    <td>{s.total_acumulado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

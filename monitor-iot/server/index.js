@@ -51,6 +51,15 @@ app.use(express.json());
 
 // Base de datos en memoria (objeto JS)
 const sensorData = {};
+// Historial en memoria por sensor (últimos N registros)
+const sensorHistory = {};
+
+function pushHistory(sensor_id, entry) {
+  if (!sensorHistory[sensor_id]) sensorHistory[sensor_id] = [];
+  sensorHistory[sensor_id].push(entry);
+  const MAX = 500; // mantener últimos 500 registros por sensor
+  if (sensorHistory[sensor_id].length > MAX) sensorHistory[sensor_id] = sensorHistory[sensor_id].slice(-MAX);
+}
 
 /**
  * A. Endpoint de Ingesta (Para el ESP32)
@@ -99,11 +108,14 @@ app.post('/api/sensor-data', (req, res) => {
         { upsert: true, new: true }
       ).lean().then((saved) => {
         console.log(`[${new Date().toISOString()}] Datos persistidos Mongo para sensor ${sensor_id}:`, saved);
+        // también mantener historial en memoria para la API de reportes
+        try { pushHistory(sensor_id, { ...data, stored: 'mongo' }); } catch (e) { /* ignore */ }
         res.status(200).json({ success: true, message: 'Datos recibidos y guardados', data: saved });
       }).catch((err) => {
         console.error('Error guardando en Mongo:', err);
         // Fallback a memoria
         sensorData[sensor_id] = data;
+        try { pushHistory(sensor_id, { ...data, stored: 'memory' }); } catch (e) { /* ignore */ }
         res.status(200).json({ success: true, message: 'Datos recibidos (guardado en memoria por error DB)', data });
       });
       return;
@@ -111,6 +123,9 @@ app.post('/api/sensor-data', (req, res) => {
 
     // Fallback: actualizar estado en memoria usando sensor_id como clave única
     sensorData[sensor_id] = data;
+
+    // mantener historial en memoria
+    try { pushHistory(sensor_id, { ...data, stored: 'memory' }); } catch (e) { /* ignore */ }
 
     console.log(`[${new Date().toISOString()}] Datos recibidos del sensor ${sensor_id}:`, data);
 
@@ -162,6 +177,20 @@ app.get('/api/dashboard', (req, res) => {
       error: 'Error interno del servidor',
       details: error.message 
     });
+  }
+});
+
+/**
+ * Endpoint de reportes: devuelve el historial en memoria por sensor
+ * GET /api/reports
+ * Response: { success: true, count: <total sensors>, data: { sensor_id: [ {..}, ... ] } }
+ */
+app.get('/api/reports', (req, res) => {
+  try {
+    res.status(200).json({ success: true, count: Object.keys(sensorHistory).length, data: sensorHistory });
+  } catch (err) {
+    console.error('Error al obtener reports:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
