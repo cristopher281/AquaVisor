@@ -125,7 +125,7 @@ function AlertsPanel({ sensors }) {
                             </button>
 
                             <button className="view-all-button" onClick={async () => {
-                                // Generar PDF profesional client-side: captura gráfica y tabla/alertas
+                                // Generar PDF profesional client-side: captura gráfica, mini-gráficas (sparklines) y estadísticas
                                 try {
                                     const html2canvasMod = await import('html2canvas');
                                     const html2canvas = html2canvasMod && html2canvasMod.default ? html2canvasMod.default : html2canvasMod;
@@ -138,51 +138,111 @@ function AlertsPanel({ sensors }) {
                                     const canvas = await html2canvas(chartEl, { scale: 2 });
                                     const imgData = canvas.toDataURL('image/png');
 
-                                    // Obtener algunos metadatos y tablas desde /api/reports
+                                    // Obtener historial y metadatos
                                     const repRes = await fetch('/api/reports');
                                     const repJson = await repRes.json();
+                                    const sensorsData = (repJson && repJson.data) ? repJson.data : {};
 
-                                    // Crear PDF
+                                    // Utility: crear sparkline dataURL desde array de números
+                                    const makeSparkline = (values = [], w = 160, h = 40, stroke = '#3b82f6') => {
+                                        const cvs = document.createElement('canvas');
+                                        cvs.width = w; cvs.height = h; const ctx = cvs.getContext('2d');
+                                        // background
+                                        ctx.fillStyle = 'rgba(255,255,255,0)'; ctx.fillRect(0,0,w,h);
+                                        if (!values || values.length === 0) return cvs.toDataURL('image/png');
+                                        const min = Math.min(...values); const max = Math.max(...values);
+                                        const range = (max - min) || 1;
+                                        ctx.beginPath();
+                                        values.forEach((v,i) => {
+                                            const x = (i/(values.length-1))*(w-4) + 2;
+                                            const y = h - 4 - ((v - min)/range)*(h-8);
+                                            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+                                        });
+                                        // stroke
+                                        ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke();
+                                        // fill area
+                                        ctx.lineTo(w-2, h-2); ctx.lineTo(2, h-2); ctx.closePath();
+                                        const grad = ctx.createLinearGradient(0,0,0,h);
+                                        grad.addColorStop(0, 'rgba(59,130,246,0.25)'); grad.addColorStop(1, 'rgba(59,130,246,0)');
+                                        ctx.fillStyle = grad; ctx.fill();
+                                        // small circle on last point
+                                        const lastX = ( (values.length-1)/(values.length-1) )*(w-4) + 2;
+                                        const lastY = h - 4 - ((values[values.length-1]-min)/range)*(h-8);
+                                        ctx.beginPath(); ctx.fillStyle = '#fff'; ctx.arc(lastX, lastY, 3, 0, Math.PI*2); ctx.fill();
+                                        ctx.beginPath(); ctx.fillStyle = stroke; ctx.arc(lastX, lastY, 2, 0, Math.PI*2); ctx.fill();
+                                        return cvs.toDataURL('image/png');
+                                    };
+
+                                    // Crear PDF con layout más profesional
                                     const doc = new jsPDF({ orientation: 'landscape' });
                                     const pageW = doc.internal.pageSize.getWidth();
-                                    const margin = 12;
+                                    const pageH = doc.internal.pageSize.getHeight();
+                                    const margin = 14;
 
-                                    // Encabezado
+                                    // Header (try to include logo if present)
                                     doc.setFontSize(18);
-                                    doc.text('AquaVisor - Reporte Técnico', margin, 20);
-                                    doc.setFontSize(10);
-                                    doc.text(`Generado: ${new Date().toLocaleString('es-ES')}`, margin, 28);
+                                    const logoUrl = '/logo.png';
+                                    try {
+                                        const logoResp = await fetch(logoUrl);
+                                        if (logoResp.ok) {
+                                            const blob = await logoResp.blob();
+                                            const reader = new FileReader();
+                                            const logoData = await new Promise(res => { reader.onload = () => res(reader.result); reader.readAsDataURL(blob); });
+                                            const logoW = 36; const logoH = 36;
+                                            doc.addImage(logoData, 'PNG', margin, 12, logoW, logoH);
+                                            doc.text('AquaVisor', margin + logoW + 8, 28);
+                                        } else {
+                                            doc.text('AquaVisor - Reporte Técnico', margin, 28);
+                                        }
+                                    } catch (e) {
+                                        doc.text('AquaVisor - Reporte Técnico', margin, 28);
+                                    }
 
-                                    // Incluir imagen de la gráfica
+                                    doc.setFontSize(10);
+                                    doc.text(`Generado: ${new Date().toLocaleString('es-ES')}`, pageW - margin - 80, 20);
+                                    doc.setDrawColor(220); doc.line(margin, 36, pageW - margin, 36);
+
+                                    // Main chart image
                                     const imgProps = doc.getImageProperties(imgData);
                                     const imgW = pageW - margin*2;
                                     const imgH = (imgProps.height * imgW) / imgProps.width;
-                                    doc.addImage(imgData, 'PNG', margin, 34, imgW, imgH);
+                                    let cursorY = 40;
+                                    doc.addImage(imgData, 'PNG', margin, cursorY, imgW, imgH);
+                                    cursorY += imgH + 8;
 
-                                    // Añadir resumen pequeño debajo
-                                    let cursorY = 34 + imgH + 8;
-                                    doc.setFontSize(12);
-                                    doc.text('Resumen de Sensores:', margin, cursorY);
+                                    // Añadir tabla de sensores con sparkline + stats (limitar a 12 sensores)
+                                    const keys = Object.keys(sensorsData).slice(0, 12);
+                                    doc.setFontSize(12); doc.text('Resumen por sensor', margin, cursorY);
                                     cursorY += 6;
+                                    doc.setFontSize(10);
 
-                                    // Tabla simple de totales por sensor
-                                    if (repJson && repJson.data) {
-                                        const keys = Object.keys(repJson.data);
-                                        keys.slice(0, 20).forEach((k, i) => {
-                                            const last = (repJson.data[k] || []).slice(-1)[0];
-                                            const text = `${k} — caudal: ${last ? last.caudal_min : '-'} m³/min — total: ${last ? last.total_acumulado : '-'} `;
-                                            doc.setFontSize(10);
-                                            doc.text(text, margin, cursorY);
-                                            cursorY += 5;
-                                            if (cursorY > doc.internal.pageSize.getHeight() - 20) {
-                                                doc.addPage(); cursorY = 20;
-                                            }
-                                        });
+                                    const rowH = 36; const imgSparkW = 80; const col1W = 48; const col2W = imgSparkW + 8; const col3W = 60;
+                                    for (let i=0;i<keys.length;i++) {
+                                        const k = keys[i]; const arr = sensorsData[k] || [];
+                                        const values = arr.map(x => Number(x.caudal_min) || 0).slice(-40);
+                                        const avg = values.length ? (values.reduce((a,b)=>a+b,0)/values.length) : 0;
+                                        const min = values.length ? Math.min(...values) : 0;
+                                        const max = values.length ? Math.max(...values) : 0;
+                                        const spark = makeSparkline(values, imgSparkW, 36);
+
+                                        if (cursorY + rowH > pageH - 30) { doc.addPage(); cursorY = margin + 8; }
+
+                                        // sensor id
+                                        doc.setFontSize(11); doc.text(`${k}`, margin, cursorY + 12);
+                                        // sparkline image
+                                        doc.addImage(spark, 'PNG', margin + col1W, cursorY + 2, imgSparkW, 36);
+                                        // stats
+                                        doc.setFontSize(10);
+                                        doc.text(`Avg: ${avg.toFixed(2)} m³/min`, margin + col1W + col2W + 4, cursorY + 10);
+                                        doc.text(`Min: ${min.toFixed(2)}`, margin + col1W + col2W + 4, cursorY + 18);
+                                        doc.text(`Max: ${max.toFixed(2)}`, margin + col1W + col2W + 4, cursorY + 26);
+
+                                        cursorY += rowH;
                                     }
 
                                     // Footer
                                     doc.setFontSize(9);
-                                    doc.text('Reporte generado por AquaVisor', margin, doc.internal.pageSize.getHeight() - 10);
+                                    doc.text('Reporte generado por AquaVisor', margin, pageH - 10);
 
                                     const filename = `reporte_profesional_${new Date().toISOString().replace(/[:.]/g,'-')}.pdf`;
                                     doc.save(filename);
