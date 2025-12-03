@@ -126,7 +126,8 @@ function AlertsPanel({ sensors }) {
 
                             <button className="view-all-button" onClick={async () => {
                                 // Generar PDF profesional client-side: captura gráfica, mini-gráficas (sparklines) y estadísticas
-                                try {
+                                    try {
+                                        console.log('[AlertsPanel] Iniciando generación de PDF...');
                                     const html2canvasMod = await import('html2canvas');
                                     const html2canvas = html2canvasMod && html2canvasMod.default ? html2canvasMod.default : html2canvasMod;
                                     const jspdfMod = await import('jspdf');
@@ -299,7 +300,23 @@ function AlertsPanel({ sensors }) {
                                     doc.text('Reporte generado por AquaVisor', margin, pageH - 10);
 
                                     const filename = `reporte_profesional_${new Date().toISOString().replace(/[:.]/g,'-')}.pdf`;
-                                    doc.save(filename);
+                                    try {
+                                        console.log('[AlertsPanel] Intentando doc.save()', filename);
+                                        doc.save(filename);
+                                        console.log('[AlertsPanel] doc.save() completado (download triggered)');
+                                    } catch (saveErr) {
+                                        console.error('[AlertsPanel] doc.save() falló:', saveErr);
+                                        try {
+                                            // Fallback: crear blob y abrir en nueva pestaña
+                                            const pdfBlob = doc.output('blob');
+                                            const pdfUrl = URL.createObjectURL(pdfBlob);
+                                            window.open(pdfUrl, '_blank');
+                                            console.log('[AlertsPanel] Fallback: PDF abierto en nueva pestaña');
+                                        } catch (fallbackErr) {
+                                            console.error('[AlertsPanel] Fallback para mostrar PDF falló:', fallbackErr);
+                                            alert('No fue posible descargar ni abrir el PDF. Revisa la consola para detalles.');
+                                        }
+                                    }
                                 } catch (err) {
                                     console.error('Error generando PDF:', err);
                                     alert('Error generando PDF. Revisa la consola del navegador para más detalles.');
