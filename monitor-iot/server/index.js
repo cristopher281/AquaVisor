@@ -9,11 +9,72 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 const fs = require('fs');
 const path = require('path');
+const mysql = require('mysql2/promise');
 
-// Persistencia exclusiva en disco (archivos JSON)
+// Persistencia por defecto en disco (archivos JSON). Si hay vars de MySQL,
+// se intentará inicializar la conexión a MySQL y usarla como back-end.
 app.locals.dbConnected = false;
 app.locals.dbBacking = 'file';
 console.log('Persistencia: almacenamiento en disco (sistema de archivos local) activo.');
+
+// MySQL pool (opcional)
+let mysqlPool = null;
+
+async function initMySQL() {
+  const host = process.env.CLEVER_MYSQL_HOST;
+  const user = process.env.CLEVER_MYSQL_USER;
+  const password = process.env.CLEVER_MYSQL_PASSWORD;
+  const database = process.env.CLEVER_MYSQL_DB;
+  const port = process.env.CLEVER_MYSQL_PORT ? Number(process.env.CLEVER_MYSQL_PORT) : 3306;
+
+  if (!host || !user || !database) {
+    console.log('MySQL: variables de entorno no configuradas — usando persistencia por archivos.');
+    return;
+  }
+
+  try {
+    mysqlPool = mysql.createPool({
+      host,
+      user,
+      password,
+      database,
+      port,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    });
+
+    // Crear tablas si no existen
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS sensors (
+        sensor_id VARCHAR(255) PRIMARY KEY,
+        last_seen TIMESTAMP NOT NULL,
+        caudal_min DOUBLE,
+        total_acumulado DOUBLE,
+        raw_json JSON
+      )
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS history (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        sensor_id VARCHAR(255),
+        ts TIMESTAMP NOT NULL,
+        payload JSON,
+        INDEX (sensor_id)
+      )
+    `);
+
+    app.locals.dbConnected = true;
+    app.locals.dbBacking = 'mysql';
+    console.log('MySQL inicializado correctamente y tablas verificadas.');
+  } catch (err) {
+    console.error('Error inicializando MySQL:', err);
+    mysqlPool = null;
+    app.locals.dbConnected = false;
+    app.locals.dbBacking = 'file';
+  }
+}
 
 // Middleware
 app.use(cors());
@@ -272,8 +333,11 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-app.listen(PORT, () => {
-  console.log(`
+// Arranque: inicializar MySQL (si está configurado) y luego arrancar Express
+(async () => {
+  await initMySQL();
+  app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                   SERVIDOR ACUAVISOR                       ║
 ╠════════════════════════════════════════════════════════════╣
@@ -291,4 +355,5 @@ Para obtener tu IP local, ejecuta:
   Windows: ipconfig
   Mac/Linux: ifconfig
   `);
-});
+  });
+})();
