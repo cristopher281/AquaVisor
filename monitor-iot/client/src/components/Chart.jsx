@@ -1,7 +1,43 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { useEffect, useState } from 'react';
 import './Chart.css';
 
 function Chart({ data, title, currentValue, elementId }) {
+    const [chartColors, setChartColors] = useState({
+        grid: 'rgba(255, 255, 255, 0.1)',
+        axis: 'rgba(255, 255, 255, 0.5)',
+        text: 'rgba(255, 255, 255, 0.7)'
+    });
+
+    useEffect(() => {
+        // Get computed style from root element to access CSS variables
+        const root = document.documentElement;
+        const computedStyle = getComputedStyle(root);
+
+        setChartColors({
+            grid: computedStyle.getPropertyValue('--chart-grid-color').trim() || 'rgba(255, 255, 255, 0.1)',
+            axis: computedStyle.getPropertyValue('--chart-axis-color').trim() || 'rgba(255, 255, 255, 0.5)',
+            text: computedStyle.getPropertyValue('--chart-text-color').trim() || 'rgba(255, 255, 255, 0.7)'
+        });
+
+        // Listen for theme changes
+        const observer = new MutationObserver(() => {
+            const updatedStyle = getComputedStyle(root);
+            setChartColors({
+                grid: updatedStyle.getPropertyValue('--chart-grid-color').trim() || 'rgba(255, 255, 255, 0.1)',
+                axis: updatedStyle.getPropertyValue('--chart-axis-color').trim() || 'rgba(255, 255, 255, 0.5)',
+                text: updatedStyle.getPropertyValue('--chart-text-color').trim() || 'rgba(255, 255, 255, 0.7)'
+            });
+        });
+
+        observer.observe(root, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
+
+        return () => observer.disconnect();
+    }, []);
+
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             return (
@@ -43,15 +79,15 @@ function Chart({ data, title, currentValue, elementId }) {
                                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                         <XAxis
                             dataKey="time"
-                            stroke="rgba(255,255,255,0.5)"
-                            style={{ fontSize: '12px' }}
+                            stroke={chartColors.axis}
+                            style={{ fontSize: '12px', fill: chartColors.text }}
                         />
                         <YAxis
-                            stroke="rgba(255,255,255,0.5)"
-                            style={{ fontSize: '12px' }}
+                            stroke={chartColors.axis}
+                            style={{ fontSize: '12px', fill: chartColors.text }}
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Area
