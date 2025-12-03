@@ -112,7 +112,7 @@ function CommandCenter() {
 
           <div className="dashboard-grid">
             <div className="chart-section">
-              <Chart data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length-1].value : metrics.averageFlow} m³`} />
+              <Chart elementId="dashboard-chart" data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length-1].value : metrics.averageFlow} m³`} />
 
               <div className="bottom-metrics">
                 <WaterQualityMetrics />

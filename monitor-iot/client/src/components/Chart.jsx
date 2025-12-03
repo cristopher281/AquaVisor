@@ -1,7 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import './Chart.css';
 
-function Chart({ data, title, currentValue }) {
+function Chart({ data, title, currentValue, elementId }) {
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             return (
@@ -15,7 +15,7 @@ function Chart({ data, title, currentValue }) {
     };
 
     return (
-        <div className="chart-container glass">
+        <div id={elementId} className="chart-container glass">
             <div className="chart-header">
                 <div className="chart-title-group">
                     <h3 className="chart-title">{title}</h3>
