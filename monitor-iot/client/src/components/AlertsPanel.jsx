@@ -127,14 +127,14 @@ function AlertsPanel({ sensors }) {
                             <button className="view-all-button" onClick={async () => {
                                 // Generar PDF profesional client-side: captura gráfica y tabla/alertas
                                 try {
-                                    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-                                        import('html2canvas'),
-                                        import('jspdf')
-                                    ].map(p => p.catch(e => { throw e; })));
+                                    const html2canvasMod = await import('html2canvas');
+                                    const html2canvas = html2canvasMod && html2canvasMod.default ? html2canvasMod.default : html2canvasMod;
+                                    const jspdfMod = await import('jspdf');
+                                    const jsPDF = jspdfMod && jspdfMod.jsPDF ? jspdfMod.jsPDF : jspdfMod.default || jspdfMod;
 
                                     // Capturar la gráfica principal
                                     const chartEl = document.getElementById('dashboard-chart');
-                                    if (!chartEl) { alert('No se encontró la gráfica en la página.'); return; }
+                                    if (!chartEl) { alert('No se encontró la gráfica en la página. Ve al Centro de Comando y prueba de nuevo.'); return; }
                                     const canvas = await html2canvas(chartEl, { scale: 2 });
                                     const imgData = canvas.toDataURL('image/png');
 
@@ -188,7 +188,7 @@ function AlertsPanel({ sensors }) {
                                     doc.save(filename);
                                 } catch (err) {
                                     console.error('Error generando PDF:', err);
-                                    alert('Error generando PDF. Asegúrate de haber instalado dependencias: `npm install html2canvas jspdf` en el cliente.');
+                                    alert('Error generando PDF. Revisa la consola del navegador para más detalles.');
                                 }
                             }}>
                                 <span>Generar PDF</span>
