@@ -17,7 +17,7 @@ function Header({ lastUpdate }) {
         <header className="header">
             <div className="header-content">
                 <div className="header-left">
-                    <h1 className="header-title">Centro de Comando AcuaVisor</h1>
+                    <h1 className="header-title">Centro de Comando AquaVisor</h1>
                     <div className="header-breadcrumb">
                         <span className="breadcrumb-item">Dashboard</span>
                         <span className="breadcrumb-separator">/</span>
