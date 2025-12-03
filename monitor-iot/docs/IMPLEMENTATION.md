@@ -46,28 +46,20 @@ Alternativas (no recomendadas directamente desde ESP32):
 
 3) Visualización
 - Frontend realiza polling a `GET /api/dashboard` cada 3s.
-- Ejemplo de consumo en React (simplificado):
+## AquaVisor — Implementación (limpia, actual)
 
-```js
-async function fetchDashboard() {
-  const res = await fetch('/api/dashboard');
-  const body = await res.json();
-  if (body.success) setSensors(body.data);
-}
-## AquaVisor — Implementación (resumen actualizado)
+Este documento resume la arquitectura actual del proyecto y cómo ejecutarlo. El soporte a MongoDB fue retirado del código; la persistencia es por archivos JSON en `monitor-iot/server/data/`.
 
-Este documento explica la arquitectura actual del proyecto y cómo ejecutar y desplegar la app. Se ha eliminado el soporte a MongoDB del código: la persistencia es por archivos JSON en `monitor-iot/server/data/`.
-
-### Estado actual — Persistencia
+### Persistencia
 
 - Persistencia por defecto: archivos JSON en `monitor-iot/server/data/` (`sensors.json` y `history.json`).
-- El servidor mantiene el estado en memoria y lo vuelca periódicamente a disco (cada pocos segundos).
-- Si despliegas en un PaaS (por ejemplo Clever Cloud), ten en cuenta que el sistema de archivos puede ser efímero. Para persistencia duradera añade un servicio gestionado y adapta el backend.
+- El servidor mantiene el estado en memoria y lo guarda periódicamente a disco.
+- En PaaS (Clever Cloud u otros) el sistema de archivos puede ser efímero; para durabilidad usa un servicio gestionado y adapta el backend.
 
-### Comunicación recomendada desde el ESP32
+### Comunicación ESP32 → Backend
 
-- El ESP32 debe enviar lecturas al Backend mediante HTTP(S) POST a `POST /api/sensor-data`.
-- El backend valida los campos y actualiza el estado en memoria.
+- Enviar lecturas por HTTP(S) POST a `POST /api/sensor-data`.
+- El servidor valida y actualiza el estado en memoria.
 
 Ejemplo (Arduino/ESP32):
 
@@ -79,36 +71,34 @@ String payload = "{\"sensor_id\":\"1\",\"caudal_min\":\"12.3\",\"total_acumulado
 int code = http.POST(payload);
 ```
 
-### Flujo de datos (resumen)
+### Flujo de datos
 
-1. Ingestión: ESP32 → `POST /api/sensor-data`.
-2. Persistencia: el backend guarda en memoria y sincroniza con `monitor-iot/server/data/` en disco.
-3. Visualización: frontend consulta `GET /api/dashboard` periódicamente (polling cada 3s por defecto).
+1. Ingestión: `POST /api/sensor-data` desde dispositivo o simulador.
+2. Persistencia: memoria → sincronización a `monitor-iot/server/data/`.
+3. Visualización: `GET /api/dashboard` por el frontend (polling cada 3s).
 
-### Despliegue en Clever Cloud (nota sobre persistencia)
+### Despliegue en Clever Cloud
 
-- Puedes desplegar la aplicación como una app Node.js en Clever Cloud. El repositorio ya contiene todo lo necesario para ejecutar el backend y el frontend.
-- Atención: el almacenamiento local de la instancia puede ser efímero. Si necesitas datos duraderos en Clever Cloud, añade un servicio gestionado (base de datos o almacenamiento) y adapta el backend.
-- Si quieres, te ayudo a generar la configuración de despliegue (`clevercloud.json`) y a adaptar el backend para usar la base de datos gestionada que prefieras.
+- Puedes desplegar la app como Node.js; considera que el sistema de archivos puede ser efímero.
+- Para persistencia duradera añade un servicio gestionado (DB o almacenamiento) y adapta el backend.
 
-### Notas sobre migraciones y scripts
+### Migraciones y scripts
 
-- El proyecto no incluye actualmente ningún script activo para migrar datos a MongoDB. Un antiguo `migrate-to-mongo.js` fue deshabilitado cuando se eliminó el soporte a MongoDB.
-- Si en el futuro decides usar un servicio gestionado, puedo volver a implementar un script de migración.
+- No hay scripts activos para migrar a MongoDB; el antiguo `migrate-to-mongo.js` fue deshabilitado. Si vuelves a usar una DB gestionada, puedo recrear la migración.
 
 ### API — Endpoints principales
 
-- `POST /api/sensor-data` — ingestión de lecturas. Body JSON con `sensor_id`, `caudal_min`, `total_acumulado`, `hora`.
-- `GET /api/dashboard` — devuelve sensores actuales y métricas.
-- `GET /api/reports` — devuelve historial en memoria por sensor.
-- `GET /api/generate-report` — genera y descarga un CSV con el histórico.
-- `GET /api/health` — health-check.
+- `POST /api/sensor-data`
+- `GET /api/dashboard`
+- `GET /api/reports`
+- `GET /api/generate-report`
+- `GET /api/health`
 
 ### Simulador
 
-- `monitor-iot/server/simulator.js` envía POSTs periódicos para probar la ingestión sin hardware.
+- `monitor-iot/server/simulator.js` envía POSTs para pruebas.
 
-### Pasos para ejecutar localmente
+### Ejecutar localmente
 
 Backend:
 ```cmd
@@ -132,56 +122,7 @@ node simulator.js
 
 ---
 
-Si quieres, actualizo también el `README.md` (resumen) y elimino cualquier resto de referencias a MongoDB en la documentación o en `package-lock.json` (esto último requiere regenerar el lockfile localmente con `npm install`).
-      Serial.println(code);
-      Serial.println(resp);
-      http.end();
-    }
-    delay(3000);
-  }
-  ```
-
-  Nota: asegúrate de que el ESP32 esté en la misma red local y que la IP del servidor sea accesible desde el dispositivo.
-
-  ---
-
-  ## Comandos y pasos de ejecución
-
-  Frontend (Vite):
-
-  ```cmd
-  cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\client"
-  npm install
-  npm run dev
-  ```
-
-  Backend (Express):
-
-  ```cmd
-  cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
-  npm install
-  npm run start
-  ```
-
-  Simulador:
-
-  ```cmd
-  cd /d "c:\Users\DELL\OneDrive\Escritorio\Bakend-Esp32\monitor-iot\server"
-  node simulator.js
-  ```
-
-  Pruebas con `curl` (Windows `cmd`):
-
-  ```cmd
-  curl -H "Content-Type: application/json" -d "{\"sensor_id\":\"5\",\"caudal_min\":\"12\",\"total_acumulado\":\"120.5\",\"hora\":\"2025-12-02 10:00:00\"}" http://localhost:4000/api/sensor-data
-  curl http://localhost:4000/api/dashboard
-  ```
-
-  ---
-
-  ## Pruebas y debugging
-
-  - Si obtienes `Cannot find module 'express'`: ejecutar `npm install` dentro de `monitor-iot/server`.
+Si quieres, quito también las últimas referencias a Mongo en el repositorio (por ejemplo en `package-lock.json`) — esto requiere regenerar el lockfile localmente con `npm install`.
   - Si `simulator.js` falla con `fetch is not defined`: tu Node es menor a 18. Actualiza Node o instala `node-fetch` y ajusta el script.
   - Si el frontend no muestra datos: comprueba que `GET /api/dashboard` devuelve `200` (usa `curl`), y que la URL en `client` apunta al host correcto (en desarrollo normalmente `http://localhost:4000`).
 
