@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Chart from '../components/Chart';
 import { FiChevronLeft, FiChevronRight, FiDownload, FiFilter } from 'react-icons/fi';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import './Reports.css';
 
 function Reports() {
@@ -90,6 +92,52 @@ function Reports() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPDF = async () => {
+    if (!selectedSensor) {
+      alert('Selecciona un sensor con datos');
+      return;
+    }
+
+    try {
+      const element = document.querySelector('.reports-grid');
+      if (!element) {
+        alert('No se encontró el área de reportes para exportar');
+        return;
+      }
+
+      // Renderizar a canvas con mayor escala para mejor resolución
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Calcular dimensiones de la imagen en mm conservando aspecto
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let position = 0;
+      let remainingHeight = imgHeight;
+
+      // Añadir imagen en una o varias páginas
+      while (remainingHeight > 0) {
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        remainingHeight -= pageHeight;
+        if (remainingHeight > 0) {
+          pdf.addPage();
+          position -= pageHeight; // desplazar la imagen hacia arriba para la siguiente "porción"
+        }
+      }
+
+      const filename = `historial_${selectedSensor}_${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      pdf.save(filename);
+    } catch (err) {
+      console.error('Error exportando PDF:', err);
+      alert('Ocurrió un error generando el PDF');
+    }
+  };
+
   return (
     <div className="page reports">
       <header className="page-header">
@@ -118,10 +166,17 @@ function Reports() {
                 </select>
               </div>
 
-              <button className="export-btn" onClick={handleExportCSV}>
-                <FiDownload className="btn-icon" />
-                Exportar CSV
-              </button>
+              <div className="export-actions">
+                <button className="export-btn" onClick={handleExportCSV}>
+                  <FiDownload className="btn-icon" />
+                  Exportar CSV
+                </button>
+
+                <button className="export-btn pdf" onClick={handleExportPDF} title="Exportar a PDF">
+                  <FiDownload className="btn-icon" />
+                  Exportar PDF
+                </button>
+              </div>
             </div>
 
             <Chart data={chartData} title={`Rendimiento Histórico: ${selectedSensor || ''}`} currentValue={`${chartData.length ? chartData[chartData.length - 1].value : '-'} L`} />

@@ -75,6 +75,11 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
+.export-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .export-btn {
     display: flex;
     align-items: center;
@@ -100,6 +105,15 @@
 
 .export-btn:active {
     transform: translateY(0);
+}
+
+.export-btn.pdf {
+    background: #10b981; /* verde */
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.export-btn.pdf:hover {
+    background: #059669;
 }
 
 .btn-icon {
