@@ -19,6 +19,8 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
+const PDFDocument = require('pdfkit');
+const fetch = require('node-fetch');
 
 // Persistencia por defecto en disco (archivos JSON). Si hay vars de MySQL,
 // se intentará inicializar la conexión a MySQL y usarla como back-end.
@@ -370,25 +372,45 @@ app.get('/api/average-yesterday', (req, res) => {
  */
 app.get('/api/generate-report', (req, res) => {
   try {
+    // Build a clean, professional CSV with summary + header and numeric formatting
     const lines = [];
-    // Cabecera con metadatos
-    lines.push(`# Reporte Técnico AquaVisor`);
-    lines.push(`# Generated: ${new Date().toISOString()}`);
-    lines.push('timestamp,sensor_id,hora,caudal_min,total_acumulado,stored');
+
+    // Summary header (CSV comment lines, many tools ignore them but they are useful for humans)
+    const generatedAt = new Date().toISOString();
+    const totalSensors = Object.keys(sensorHistory).length;
+    let totalSamples = 0;
+    Object.values(sensorHistory).forEach(arr => { totalSamples += (arr || []).length; });
+    lines.push(`# AquaVisor - Reporte profesional`);
+    lines.push(`# Generado: ${generatedAt}`);
+    lines.push(`# Sensores: ${totalSensors} | Muestras: ${totalSamples}`);
+
+    // CSV header (columns)
+    lines.push('timestamp,sensor_id,hora,caudal_min (L),total_acumulado (L),stored');
 
     Object.entries(sensorHistory).forEach(([sensor_id, arr]) => {
-      arr.forEach(entry => {
+      (arr || []).forEach(entry => {
         const ts = entry.ultima_actualizacion || new Date().toISOString();
         const hora = entry.hora ? String(entry.hora).replace(/,/g, '') : '';
-        const caudal = entry.caudal_min !== undefined ? String(entry.caudal_min) : '';
-        const total = entry.total_acumulado !== undefined ? String(entry.total_acumulado) : '';
+        const caudal = entry.caudal_min !== undefined && entry.caudal_min !== null ? Number(entry.caudal_min).toFixed(3) : '';
+        const total = entry.total_acumulado !== undefined && entry.total_acumulado !== null ? Number(entry.total_acumulado).toFixed(3) : '';
         const stored = entry.stored || '';
         lines.push(`${ts},${sensor_id},${hora},${caudal},${total},${stored}`);
       });
     });
 
-    const csv = lines.join('\n');
-    const filename = `reporte_tecnico_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+    // Prefix BOM so Excel detects UTF-8 and accents correctly
+    const csv = '\uFEFF' + lines.join('\n');
+    // Guardar también una copia con nombre profesional en reports/
+    try {
+      const reportsDir = path.join(__dirname, 'reports');
+      if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+      const csvPath = path.join(reportsDir, filename);
+      fs.writeFileSync(csvPath, csv, 'utf8');
+      console.log('CSV profesional guardado en:', csvPath);
+    } catch (e) {
+      console.warn('No se pudo guardar CSV en reports:', e.message || e);
+    }
+    const filename = `reporte_profesional_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -625,6 +647,314 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     sensores_activos: Object.keys(sensorData).length
   });
+});
+
+// Helpers: estadística y generación de imágenes (QuickChart)
+function computeStatistics(entries, threshold = 0.012) {
+  const values = entries.map(e => Number(e.caudal_min)).filter(v => !Number.isNaN(v));
+  const n = values.length;
+  if (n === 0) return null;
+  const sum = values.reduce((a, b) => a + b, 0);
+  const mean = sum / n;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+  const sigma = Math.sqrt(variance);
+
+  // Umbral
+  const exceeded = values.filter(v => v > threshold).length;
+  const normal = n - exceeded;
+  // Estimar intervalo de muestreo en segundos (mediana de diffs)
+  const times = entries.map(e => new Date(e.ultima_actualizacion || e.ts || e.hora).getTime()).filter(t => !Number.isNaN(t)).sort((a,b)=>a-b);
+  let samplingSeconds = 3;
+  if (times.length >= 2) {
+    const diffs = [];
+    for (let i = 1; i < times.length; i++) diffs.push((times[i] - times[i-1]) / 1000);
+    diffs.sort((a,b)=>a-b);
+    samplingSeconds = diffs[Math.floor(diffs.length/2)] || samplingSeconds;
+  }
+  const timeOutsideSeconds = exceeded * samplingSeconds;
+
+  // Distribución en bins dinámicos (5 bins)
+  const bins = [];
+  const binCount = 6;
+  const range = max - min || 0.00001;
+  for (let i = 0; i < binCount; i++) {
+    const lo = min + (i * range / binCount);
+    const hi = min + ((i+1) * range / binCount);
+    bins.push({ lo, hi, count: 0 });
+  }
+  values.forEach(v => {
+    const idx = Math.min(Math.floor((v - min) / (range || 1) * binCount), binCount - 1);
+    bins[idx].count++;
+  });
+  const distribution = bins.map(b => ({ range: `${b.lo.toFixed(5)} - ${b.hi.toFixed(5)}`, percent: Number(((b.count / n) * 100).toFixed(2)), count: b.count }));
+
+  // Anomalías: puntos > threshold OR > mean + 2*sigma
+  const anomalies = entries.filter(e => {
+    const v = Number(e.caudal_min);
+    return !Number.isNaN(v) && (v > threshold || v > mean + 2 * sigma);
+  }).map(a => ({ sensor_id: a.sensor_id, ts: a.ultima_actualizacion || a.ts || a.hora, value: Number(a.caudal_min) }));
+
+  return {
+    count: n,
+    mean: Number(mean.toFixed(6)),
+    min: Number(min.toFixed(6)),
+    max: Number(max.toFixed(6)),
+    sigma: Number(sigma.toFixed(6)),
+    exceededCount: exceeded,
+    normalCount: normal,
+    percentExceeded: Number(((exceeded / n) * 100).toFixed(2)),
+    percentNormal: Number(((normal / n) * 100).toFixed(2)),
+    timeOutsideSeconds: Math.round(timeOutsideSeconds),
+    samplingSeconds,
+    distribution,
+    anomalies
+  };
+}
+
+async function getChartImageBuffer(chartConfig, width = 1200, height = 400) {
+  try {
+    const qcUrl = 'https://quickchart.io/chart';
+    const body = { chart: JSON.stringify(chartConfig), width, height, format: 'png', backgroundColor: 'white' };
+    const resp = await fetch(qcUrl, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+    if (!resp.ok) throw new Error('QuickChart returned ' + resp.status);
+    const arrayBuffer = await resp.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (err) {
+    console.error('Error generando imagen con QuickChart:', err.message || err);
+    return null;
+  }
+}
+
+/**
+ * GET /api/generate-professional-report
+ * Query: sensor_id (optional), start (ISO, optional), end (ISO, optional), threshold (optional)
+ * Generates CSV + PDF profesional with statistics, charts and diagnostics.
+ */
+app.get('/api/generate-professional-report', async (req, res) => {
+  try {
+    const { sensor_id, start, end, threshold } = req.query;
+    const Lcrit = threshold ? Number(threshold) : 0.012;
+
+    // Collect entries
+    let entries = [];
+    if (sensor_id) {
+      entries = (sensorHistory[sensor_id] || []).slice();
+    } else {
+      Object.values(sensorHistory).forEach(arr => { entries.push(...(arr || [])); });
+    }
+    // Apply time filter
+    let startMs = start ? new Date(start).getTime() : null;
+    let endMs = end ? new Date(end).getTime() : null;
+    if (startMs || endMs) {
+      entries = entries.filter(e => {
+        const t = new Date(e.ultima_actualizacion || e.ts || e.hora).getTime();
+        if (Number.isNaN(t)) return false;
+        if (startMs && t < startMs) return false;
+        if (endMs && t > endMs) return false;
+        return true;
+      });
+    }
+
+    if (!entries || entries.length === 0) return res.status(400).json({ success: false, error: 'No hay datos disponibles para el periodo solicitado' });
+
+    // Compute stats
+    const stats = computeStatistics(entries, Lcrit);
+
+    // Prepare report filenames
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const baseName = `reporte_profesional_${sensor_id || 'all'}_${timestamp}`;
+    const reportsDir = path.join(__dirname, 'reports');
+    if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+
+    // CSV: include header summary, distribution, and raw table
+    const csvLines = [];
+    csvLines.push(`# AquaVisor - Reporte profesional`);
+    csvLines.push(`# Generado: ${new Date().toISOString()}`);
+    csvLines.push(`# Sensor: ${sensor_id || 'Todos'} | Muestras: ${stats.count}`);
+    csvLines.push(`# L_crítico: ${Lcrit}`);
+    csvLines.push('');
+    csvLines.push('---METRICAS DEL PERIODO---');
+    csvLines.push(['Metric','Value'].join(','));
+    csvLines.push(['Promedio (L/min)', stats.mean].join(','));
+    csvLines.push(['Máximo (L/min)', stats.max].join(','));
+    csvLines.push(['Mínimo (L/min)', stats.min].join(','));
+    csvLines.push(['Desviación estándar (σ)', stats.sigma].join(','));
+    csvLines.push(['% Normal', stats.percentNormal].join(','));
+    csvLines.push(['% Excedido', stats.percentExceeded].join(','));
+    csvLines.push(['Tiempo total fuera de umbral (s)', stats.timeOutsideSeconds].join(','));
+    csvLines.push('');
+    csvLines.push('---DISTRIBUCIÓN---');
+    csvLines.push(['Rango (L/min)','Porcentaje','Conteo'].join(','));
+    stats.distribution.forEach(d => csvLines.push([`"${d.range}"`, d.percent, d.count].join(',')));
+    csvLines.push('');
+    csvLines.push('---DATOS HISTÓRICOS (RAW)---');
+    csvLines.push('timestamp,sensor_id,hora,caudal_min (L),total_acumulado (L),stored');
+    entries.forEach(entry => {
+      const ts = entry.ultima_actualizacion || new Date().toISOString();
+      const horaVal = entry.hora ? String(entry.hora).replace(/,/g,'') : '';
+      const caudal = entry.caudal_min !== undefined && entry.caudal_min !== null ? Number(entry.caudal_min).toFixed(6) : '';
+      const total = entry.total_acumulado !== undefined && entry.total_acumulado !== null ? Number(entry.total_acumulado).toFixed(6) : '';
+      csvLines.push([ts, entry.sensor_id || '', horaVal, caudal, total, entry.stored || ''].join(','));
+    });
+
+    const csvContent = '\uFEFF' + csvLines.join('\n');
+    const csvPath = path.join(reportsDir, baseName + '.csv');
+    fs.writeFileSync(csvPath, csvContent, 'utf8');
+
+    // Charts via QuickChart: main trend
+    // Build chart config
+    const labels = entries.map(e => new Date(e.ultima_actualizacion || e.ts || e.hora).toISOString());
+    const dataPoints = entries.map(e => Number(e.caudal_min));
+    const mainChartConfig = {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Caudal (L/min)',
+            data: dataPoints,
+            borderColor: 'rgba(34,139,230,0.8)',
+            fill: false,
+            pointRadius: 2,
+            tension: 0.1
+          },
+          {
+            label: 'L_crítico',
+            data: labels.map(() => Lcrit),
+            borderColor: 'purple',
+            borderDash: [6,4],
+            fill: false,
+            pointRadius: 0
+          },
+          {
+            label: 'Promedio histórico',
+            data: labels.map(() => stats.mean),
+            borderColor: 'green',
+            borderDash: [4,4],
+            fill: false,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        scales: { x: { display: true, type: 'category' }, y: { title: { display: true, text: 'L/min' } } },
+        plugins: { legend: { display: true } }
+      }
+    };
+
+    const mainChartBuffer = await getChartImageBuffer(mainChartConfig, 1400, 500);
+
+    // If anomalies, build zoom chart around first anomaly (±3 hours => 6 hours window)
+    let zoomChartBuffer = null;
+    if (stats.anomalies && stats.anomalies.length > 0) {
+      const eventTs = new Date(stats.anomalies[0].ts).getTime();
+      const windowMs = 6 * 60 * 60 * 1000; // 6 hours
+      const zoomEntries = entries.filter(e => {
+        const t = new Date(e.ultima_actualizacion || e.ts || e.hora).getTime();
+        return t >= (eventTs - windowMs/2) && t <= (eventTs + windowMs/2);
+      });
+      if (zoomEntries.length > 0) {
+        const zlabels = zoomEntries.map(e => new Date(e.ultima_actualizacion || e.ts || e.hora).toISOString());
+        const zdata = zoomEntries.map(e => Number(e.caudal_min));
+        const zoomConfig = {
+          type: 'line',
+          data: { labels: zlabels, datasets: [{ label: 'Caudal (L/min)', data: zdata, borderColor: 'rgba(255,99,132,0.9)', pointRadius: 3 } , { label: 'L_crítico', data: zlabels.map(()=>Lcrit), borderColor: 'purple', borderDash:[6,4], pointRadius:0 }]},
+          options: { scales: { x: { type: 'category' }, y: { title: { display: true, text: 'L/min' } } } }
+        };
+        zoomChartBuffer = await getChartImageBuffer(zoomConfig, 1400, 450);
+      }
+    }
+
+    // Generate PDF via PDFKit
+    const pdfPath = path.join(reportsDir, baseName + '.pdf');
+    const doc = new PDFDocument({ autoFirstPage: false });
+    const pdfStream = fs.createWriteStream(pdfPath);
+    doc.pipe(pdfStream);
+
+    // Cover page
+    doc.addPage({ size: 'A4', margin: 40 });
+    // Include provided image if exists (project images folder)
+    const providedImage = path.join(__dirname, '..', '..', 'images', 'diseño', 'images.png');
+    if (fs.existsSync(providedImage)) {
+      try { doc.image(providedImage, { fit: [500, 300], align: 'center' }); } catch (e) { /* ignore image errors */ }
+    }
+    doc.moveDown();
+    doc.fontSize(20).text('AquaVisor - Reporte Profesional', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).text(`Generado: ${new Date().toLocaleString('es-ES')}`, { align: 'center' });
+    doc.fontSize(10).text(`Sensor: ${sensor_id || 'Todos'}`, { align: 'center' });
+    doc.addPage();
+
+    // Executive summary (3 paragraphs): auto-generated
+    const p1 = `Periodo: ${start || 'inicio'} → ${end || 'ahora'}. Muestras analizadas: ${stats.count}. El rendimiento general se resume en la tabla de métricas adjunta.`;
+    const p2 = `Durante el periodo, el caudal promedio fue ${stats.mean} L/min con una desviación estándar de ${stats.sigma}. El umbral crítico definido es L_crítico = ${Lcrit} L/min.`;
+    const p3 = `Se detectaron ${stats.anomalies.length} lecturas anómalas (${stats.percentExceeded}% de las muestras). Se incluye un análisis detallado y gráficos con líneas de referencia para facilitar la interpretación.`;
+    doc.fontSize(12).text('Resumen Ejecutivo', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10).text(p1 + '\n\n' + p2 + '\n\n' + p3);
+    doc.moveDown();
+
+    // Metrics table
+    doc.fontSize(12).text('Tabla I: Métricas de Rendimiento del Período', { underline: true });
+    doc.moveDown(0.3);
+    const tableTop = doc.y;
+    doc.fontSize(10);
+    const metrics = [
+      ['Promedio (L/min)', stats.mean],
+      ['Máximo (L/min)', stats.max],
+      ['Mínimo (L/min)', stats.min],
+      ['Desviación estándar (σ)', stats.sigma],
+      ['% Normal', stats.percentNormal + '%'],
+      ['% Excedido', stats.percentExceeded + '%'],
+      ['Tiempo fuera de umbral (s)', stats.timeOutsideSeconds]
+    ];
+    metrics.forEach(row => { doc.text(row[0], { continued: true, width: 300 }); doc.text(String(row[1]), { align: 'right' }); });
+    doc.moveDown();
+
+    // Insert main chart image if generated
+    if (mainChartBuffer) {
+      doc.addPage();
+      doc.fontSize(12).text('Gráfico Principal: Tendencia histórica con líneas de referencia', { underline: true });
+      doc.moveDown(0.3);
+      try { doc.image(mainChartBuffer, { fit: [520, 300], align: 'center' }); } catch (e) { console.warn('No se pudo incrustar imagen principal:', e.message); }
+    }
+
+    // Diagnostics
+    doc.addPage();
+    doc.fontSize(12).text('Diagnóstico Automatizado y Análisis de Impacto', { underline: true });
+    doc.moveDown(0.5);
+    // Simple rule-based narrative
+    const peak = stats.max;
+    const peakEntry = entries.find(e => Number(e.caudal_min) === peak) || {};
+    const peakTs = peakEntry.ultima_actualizacion || peakEntry.ts || peakEntry.hora || 'N/A';
+    const diag = `El rendimiento del sensor durante el periodo se mantuvo en estado Normal el ${stats.percentNormal}% del tiempo. No obstante, se registraron ${stats.exceededCount} lecturas que excedieron el umbral crítico (L_crítico = ${Lcrit} L/min). El pico máximo se documentó a ${peakTs} con una lectura de ${peak} L/min, lo que representa una desviación significativa respecto al promedio histórico.`;
+    doc.fontSize(10).text(diag);
+    doc.moveDown();
+
+    // Zoom chart if available
+    if (zoomChartBuffer) {
+      doc.addPage();
+      doc.fontSize(12).text('Gráfico de Zoom (anomalía detectada)', { underline: true });
+      doc.moveDown(0.3);
+      try { doc.image(zoomChartBuffer, { fit: [520, 300], align: 'center' }); } catch (e) { console.warn('No se pudo incrustar zoom:', e.message); }
+    }
+
+    // Distribution table
+    doc.addPage();
+    doc.fontSize(12).text('Distribución de Frecuencia', { underline: true });
+    doc.moveDown(0.3);
+    stats.distribution.forEach(d => doc.fontSize(10).text(`${d.range} → ${d.percent}% (${d.count} lecturas)`));
+
+    doc.end();
+    await new Promise(resolve => pdfStream.on('finish', resolve));
+
+    return res.json({ success: true, pdf: `/reports/${path.basename(pdfPath)}`, csv: `/reports/${path.basename(csvPath)}`, stats });
+  } catch (err) {
+    console.error('Error generando reporte profesional:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Endpoint sencillo para conocer el estado de la conexión a la base de datos

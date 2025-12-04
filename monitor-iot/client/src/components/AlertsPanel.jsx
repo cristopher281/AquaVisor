@@ -245,30 +245,57 @@ function AlertsPanel({ sensors }) {
                             return cvs.toDataURL('image/png');
                         };
 
-                        // Crear PDF con layout más profesional
+                        // Crear PDF con layout más profesional (portada + resumen + tabla)
                         const doc = new jsPDF({ orientation: 'landscape' });
                         const pageW = doc.internal.pageSize.getWidth();
                         const pageH = doc.internal.pageSize.getHeight();
                         const margin = 14;
 
-                        // Header (try to include logo if present)
-                        doc.setFontSize(18);
-                        const logoUrl = '/logo.png';
+                        // Portada
+                        doc.setFontSize(28);
                         try {
+                            const logoUrl = '/logo.png';
                             const logoResp = await fetch(logoUrl);
                             if (logoResp.ok) {
                                 const blob = await logoResp.blob();
                                 const reader = new FileReader();
                                 const logoData = await new Promise(res => { reader.onload = () => res(reader.result); reader.readAsDataURL(blob); });
-                                const logoW = 36; const logoH = 36;
-                                doc.addImage(logoData, 'PNG', margin, 12, logoW, logoH);
-                                doc.text('AquaVisor', margin + logoW + 8, 28);
-                            } else {
-                                doc.text('AquaVisor - Reporte Técnico', margin, 28);
+                                const logoW = 48; const logoH = 48;
+                                doc.addImage(logoData, 'PNG', (pageW / 2) - (logoW / 2), 24, logoW, logoH);
                             }
                         } catch (e) {
-                            doc.text('AquaVisor - Reporte Técnico', margin, 28);
+                            // ignore missing logo
                         }
+                        doc.setFontSize(22);
+                        doc.text('AquaVisor — Reporte Profesional', pageW / 2, pageH / 2 - 8, { align: 'center' });
+                        doc.setFontSize(12);
+                        doc.text(`Generado: ${new Date().toLocaleString('es-ES')}`, pageW / 2, pageH / 2 + 8, { align: 'center' });
+                        doc.setFontSize(10);
+                        doc.text('Resumen: incluye gráfica, estadísticas por sensor y tabla de muestras recientes.', pageW / 2, pageH / 2 + 20, { align: 'center' });
+                        doc.addPage();
+
+                        // Header para página de datos
+                        doc.setFontSize(14);
+                        doc.text('Resumen y Gráfica', margin, 20);
+
+                        // Preparar estadísticos rápidos desde sensorsData
+                        const sensorKeys = Object.keys(sensorsData || {});
+                        const sensorsCount = sensorKeys.length;
+                        let totalSamples = 0;
+                        let globalSum = 0;
+                        sensorKeys.forEach(k => {
+                            const arr = sensorsData[k] || [];
+                            totalSamples += arr.length;
+                            arr.forEach(it => { const v = Number(it.caudal_min) || 0; globalSum += v; });
+                        });
+                        const globalAvg = totalSamples ? (globalSum / totalSamples) : 0;
+
+                        // Mostrar pequeños KPIs
+                        doc.setFontSize(10);
+                        doc.text(`Sensores: ${sensorsCount}`, margin, 32);
+                        doc.text(`Muestras: ${totalSamples}`, margin + 70, 32);
+                        doc.text(`Promedio global (L): ${globalAvg.toFixed(3)}`, margin + 150, 32);
+
 
                         doc.setFontSize(10);
                         doc.text(`Generado: ${new Date().toLocaleString('es-ES')}`, pageW - margin - 80, 20);
