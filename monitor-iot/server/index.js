@@ -560,6 +560,16 @@ process.on('uncaughtException', (err) => {
   saveToDisk();
   process.exit(1);
 });
+// Evita caídas por promesas rechazadas que nadie captura
+process.on('unhandledRejection', (reason, promise) => {
+  try {
+    console.error('Promesa no manejada rechazada:', { reason, promise });
+    // Guardar por si acaso
+    saveToDisk();
+  } catch (e) {
+    // noop
+  }
+});
 
 // Arranque: inicializar MySQL (si está configurado) y luego arrancar Express
 (async () => {
