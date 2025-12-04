@@ -1,5 +1,38 @@
 #  Documentación: Control de Válvulas desde ESP32
 
+##  Interfaz de Control de Válvula
+
+![Interfaz de Control de Válvula](C:/Users/DELL/.gemini/antigravity/brain/2b8ab2af-a134-4f91-b848-a8bce4b4e65a/uploaded_image_1764812957126.png)
+
+La interfaz web de AquaVisor incluye una pantalla dedicada de control de válvula ubicada en el menú lateral entre "Alertas Críticas" y "Configuración".
+
+###  Funcionalidad de la Interfaz Web
+
+> [!IMPORTANT]
+> **Control de la Válvula Física**: El control real de la válvula física (apertura/cierre) **SOLO funciona cuando el ESP32 está conectado** y ejecutando el código de control. La interfaz web actúa como centro de comando, pero necesita que el ESP32 esté encendido y conectado a la red para controlar la válvula solenoide.
+
+#### ✅ Sin ESP32 Conectado (Solo Interfaz Web)
+La interfaz web **SÍ permite**:
+- ✅ Visualizar el estado actual de la válvula
+- ✅ Registrar comandos de apertura/cierre
+- ✅ Ver historial de actividad reciente
+- ✅ Observar métricas (datos previos o simulados)
+- ✅ Programar horarios futuros
+
+**Pero NO puede**:
+- ❌ Abrir/cerrar la válvula física real
+- ❌ Actualizar métricas en tiempo real desde sensores
+
+#### ✅ Con ESP32 Conectado (Control Físico Completo)
+Cuando el ESP32 está conectado y ejecutando el código:
+- ✅ **Válvula física responde** a comandos de apertura/cierre
+- ✅ **Métricas en tiempo real** desde sensores (flujo, presión)
+- ✅ **Ejecución automática** de programaciones horarias
+- ✅ **Feedback inmediato** del estado real de la válvula
+- ✅ **Sincronización** entre interfaz web y hardware físico
+
+---
+
 ##  Protocolo de Comunicación
 
 El ESP32 puede **controlar válvulas** y **recibir comandos** del servidor AquaVisor mediante HTTP.
