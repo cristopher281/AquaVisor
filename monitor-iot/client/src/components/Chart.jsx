@@ -38,6 +38,33 @@ function Chart({ data, title, currentValue, elementId }) {
         return () => observer.disconnect();
     }, []);
 
+    // Umbrales leídos desde settings en localStorage (thresholdTop/thresholdBottom)
+    const [thresholds, setThresholds] = useState({ top: null, bottom: null });
+
+    useEffect(() => {
+        const readThresholds = () => {
+            try {
+                const raw = localStorage.getItem('acua_settings');
+                if (raw) {
+                    const s = JSON.parse(raw);
+                    const top = s && s.thresholdTop ? parseFloat(s.thresholdTop) : null;
+                    const bottom = s && s.thresholdBottom ? parseFloat(s.thresholdBottom) : null;
+                    setThresholds({ top: Number.isFinite(top) ? top : null, bottom: Number.isFinite(bottom) ? bottom : null });
+                    return;
+                }
+            } catch (e) {
+                // noop
+            }
+            setThresholds({ top: null, bottom: null });
+        };
+
+        readThresholds();
+        // Escuchar cambios en localStorage desde otra pestaña
+        const onStorage = (ev) => { if (ev.key === 'acua_settings') readThresholds(); };
+        window.addEventListener('storage', onStorage);
+        return () => window.removeEventListener('storage', onStorage);
+    }, []);
+
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             return (
@@ -50,6 +77,23 @@ function Chart({ data, title, currentValue, elementId }) {
         return null;
     };
 
+    // Custom dot: pinta azul si está por debajo del umbral inferior,
+    // rojo si excede el umbral superior, y verde en valores normales.
+    const CustomDot = (props) => {
+        const { cx, cy, payload } = props;
+        if (cx === undefined || cy === undefined) return null;
+        const val = payload && payload.value !== undefined ? Number(payload.value) : Number(props.value);
+        let fill = '#10b981'; // verde por defecto
+        if (thresholds.top !== null && !Number.isNaN(thresholds.top) && val > thresholds.top) {
+            fill = '#ef4444'; // rojo
+        } else if (thresholds.bottom !== null && !Number.isNaN(thresholds.bottom) && val < thresholds.bottom) {
+            fill = '#2563eb'; // azul
+        }
+        return (
+            <circle cx={cx} cy={cy} r={5} fill={fill} stroke="#fff" strokeWidth={1} />
+        );
+    };
+
     return (
         <div id={elementId} className="chart-container glass">
             <div className="chart-header">
@@ -60,12 +104,16 @@ function Chart({ data, title, currentValue, elementId }) {
 
                 <div className="chart-indicators">
                     <div className="indicator">
-                        <span className="indicator-dot" style={{ background: '#3b82f6' }}></span>
-                        <span className="indicator-label">Consumo Real</span>
+                        <span className="indicator-dot" style={{ background: '#2563eb' }}></span>
+                        <span className="indicator-label">Por debajo (umbral inferior)</span>
                     </div>
                     <div className="indicator">
                         <span className="indicator-dot" style={{ background: '#10b981' }}></span>
-                        <span className="indicator-label">Consumo Proyec.</span>
+                        <span className="indicator-label">Normal</span>
+                    </div>
+                    <div className="indicator">
+                        <span className="indicator-dot" style={{ background: '#ef4444' }}></span>
+                        <span className="indicator-label">Excedido (umbral superior)</span>
                     </div>
                 </div>
             </div>
@@ -97,6 +145,7 @@ function Chart({ data, title, currentValue, elementId }) {
                             strokeWidth={3}
                             fill="url(#colorValue)"
                             animationDuration={1000}
+                            dot={<CustomDot />}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
