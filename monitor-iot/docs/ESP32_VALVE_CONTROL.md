@@ -2,7 +2,7 @@
 
 ##  Interfaz de Control de Válvula
 
-![Interfaz de Control de Válvula](C:/Users/DELL/.gemini/antigravity/brain/2b8ab2af-a134-4f91-b848-a8bce4b4e65a/uploaded_image_1764812957126.png)
+![Interfaz de Control de Válvula](./images/valve-control-interface.png)
 
 La interfaz web de AquaVisor incluye una pantalla dedicada de control de válvula ubicada en el menú lateral entre "Alertas Críticas" y "Configuración".
 
