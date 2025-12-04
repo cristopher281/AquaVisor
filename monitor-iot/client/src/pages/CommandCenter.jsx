@@ -87,6 +87,29 @@ function CommandCenter() {
     return () => clearInterval(iv);
   }, []);
 
+  // Feature flag para métricas de calidad del agua.
+  // Se puede activar mediante la variable de entorno Vite `VITE_ENABLE_WQ=true`,
+  // mediante el campo `enableWQ` en `acua_settings` (persistido en localStorage),
+  // o temporalmente en el navegador con `localStorage.setItem('acua_enable_wq','true')`.
+  let enableWQ = false;
+  try {
+    const fromEnv = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_ENABLE_WQ === 'true');
+    const fromKey = (typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('acua_enable_wq') === 'true');
+    let fromSettings = false;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = window.localStorage.getItem('acua_settings');
+      if (raw) {
+        try {
+          const s = JSON.parse(raw);
+          fromSettings = !!s && !!s.enableWQ;
+        } catch (e) { /* ignore */ }
+      }
+    }
+    enableWQ = fromEnv || fromKey || fromSettings;
+  } catch (e) {
+    enableWQ = false;
+  }
+
   const metrics = (() => {
     if (sensors.length === 0) return { averageFlow: 0, operationalSensors: 0 };
     const avg = sensors.reduce((s, x) => s + (x.caudal_min || 0), 0) / sensors.length;
@@ -115,7 +138,7 @@ function CommandCenter() {
               <Chart elementId="dashboard-chart" data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length-1].value : metrics.averageFlow} L`} />
 
               <div className="bottom-metrics">
-                <WaterQualityMetrics />
+                {enableWQ && <WaterQualityMetrics />}
                 <SensorHealth sensorsCount={metrics.operationalSensors} />
               </div>
 

@@ -7,6 +7,7 @@ const DEFAULTS = {
   alertsEmail: true,
   alertsPush: true,
   dailySummary: false,
+  enableWQ: false,
   thresholdTop: '9.5',
   thresholdBottom: '2.0',
   colorTheme: 'estandar',
@@ -105,6 +106,24 @@ function Settings() {
             </div>
             <label className="switch">
               <input type="checkbox" name="dailySummary" checked={state.dailySummary} onChange={handleChange} />
+              <span className="slider" />
+            </label>
+          </div>
+
+          <div className="toggle-row">
+            <div>
+              <label>Mostrar métricas Calidad Agua</label>
+              <p className="muted">Activa para mostrar el panel de métricas de calidad del agua en el Centro de Comando.</p>
+            </div>
+            <label className="switch">
+              <input type="checkbox" name="enableWQ" checked={state.enableWQ} onChange={(e) => {
+                handleChange(e);
+                // También mantener la clave rápida para toggles inmediatos
+                try {
+                  if (e.target.checked) window.localStorage.setItem('acua_enable_wq', 'true');
+                  else window.localStorage.removeItem('acua_enable_wq');
+                } catch (err) { /* noop */ }
+              }} />
               <span className="slider" />
             </label>
           </div>
