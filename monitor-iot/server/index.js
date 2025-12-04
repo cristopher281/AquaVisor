@@ -177,8 +177,8 @@ app.post('/api/sensor-data', (req, res) => {
 
     // Validación básica
     if (!sensor_id) {
-      return res.status(400).json({ 
-        error: 'sensor_id es requerido' 
+      return res.status(400).json({
+        error: 'sensor_id es requerido'
       });
     }
 
@@ -211,16 +211,16 @@ app.post('/api/sensor-data', (req, res) => {
 
     console.log(`[${new Date().toISOString()}] Datos recibidos del sensor ${sensor_id}:`, data);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: 'Datos recibidos correctamente (memoria)',
       data: data
     });
   } catch (error) {
     console.error('Error al procesar datos del sensor:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Error interno del servidor',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -242,9 +242,9 @@ app.get('/api/dashboard', (req, res) => {
     });
   } catch (error) {
     console.error('Error al obtener datos del dashboard:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Error interno del servidor',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -287,7 +287,7 @@ app.get('/api/generate-report', (req, res) => {
     });
 
     const csv = lines.join('\n');
-    const filename = `reporte_tecnico_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
+    const filename = `reporte_tecnico_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -298,9 +298,228 @@ app.get('/api/generate-report', (req, res) => {
   }
 });
 
+/**
+ * C. Endpoints de Control de Válvulas
+ */
+
+// Estado de v álvulas en memoria
+const valveState = {
+  status: 'closed', // 'open' o 'closed'
+  flowRate: 0,
+  pressure: 0,
+  lastUpdate: new Date().toISOString()
+};
+
+// Historial de actividad de válvulas
+const valveHistory = [];
+
+// Programaciones de válvulas
+const valveSchedules = [];
+let scheduleIdCounter = 1;
+
+const VALVE_HISTORY_FILE = path.join(DATA_DIR, 'valve_history.json');
+const VALVE_SCHEDULES_FILE = path.join(DATA_DIR, 'valve_schedules.json');
+const VALVE_STATE_FILE = path.join(DATA_DIR, 'valve_state.json');
+
+// Cargar estado de válvula desde disco
+function loadValveData() {
+  try {
+    if (fs.existsSync(VALVE_STATE_FILE)) {
+      const raw = fs.readFileSync(VALVE_STATE_FILE, 'utf8');
+      Object.assign(valveState, JSON.parse(raw));
+    }
+    if (fs.existsSync(VALVE_HISTORY_FILE)) {
+      const raw = fs.readFileSync(VALVE_HISTORY_FILE, 'utf8');
+      valveHistory.push(...JSON.parse(raw));
+    }
+    if (fs.existsSync(VALVE_SCHEDULES_FILE)) {
+      const raw = fs.readFileSync(VALVE_SCHEDULES_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      valveSchedules.push(...parsed);
+      if (parsed.length > 0) {
+        scheduleIdCounter = Math.max(...parsed.map(s => s.id)) + 1;
+      }
+    }
+    console.log('Datos de válvula cargados desde disco');
+  } catch (err) {
+    console.warn('No se pudieron cargar datos de válvula:', err.message);
+  }
+}
+
+// Guardar estado de válvula en disco
+function saveValveData() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(VALVE_STATE_FILE, JSON.stringify(valveState, null, 2), 'utf8');
+    fs.writeFileSync(VALVE_HISTORY_FILE, JSON.stringify(valveHistory.slice(-100), null, 2), 'utf8');
+    fs.writeFileSync(VALVE_SCHEDULES_FILE, JSON.stringify(valveSchedules, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error guardando datos de válvula:', err.message);
+  }
+}
+
+// Cargar al inicio
+loadValveData();
+
+/**
+ * POST /api/valve/control
+ * Body: { action: 'open' | 'closed', operator: string, source: 'web' | 'scheduled' }
+ * Controla el estado de la válvula
+ */
+app.post('/api/valve/control', (req, res) => {
+  try {
+    const { action, operator, source } = req.body;
+
+    if (!action || (action !== 'open' && action !== 'closed')) {
+      return res.status(400).json({ success: false, error: 'Action must be "open" or "closed"' });
+    }
+
+    const now = new Date();
+    valveState.status = action;
+    valveState.lastUpdate = now.toISOString();
+
+    // Simular métricas (en producción, el ESP32 enviaría estos datos)
+    if (action === 'open') {
+      valveState.flowRate = 85.3 + Math.random() * 10;
+      valveState.pressure = 115 + Math.random() * 5;
+    } else {
+      valveState.flowRate = 0;
+      valveState.pressure = 0;
+    }
+
+    // Registrar en historial
+    const historyEntry = {
+      action,
+      operator: operator || 'Sistema',
+      source: source || 'web',
+      time: now.toLocaleTimeString('es-ES'),
+      timestamp: now.toISOString()
+    };
+    valveHistory.unshift(historyEntry);
+    if (valveHistory.length > 100) valveHistory.length = 100;
+
+    saveValveData();
+
+    console.log(`[VÁLVULA] ${action.toUpperCase()} por ${operator} (${source})`);
+
+    // Aquí enviarías la señal al ESP32
+    // Ver documentación abajo sobre cómo el ESP32 recibiría esto
+
+    res.json({
+      success: true,
+      status: valveState.status,
+      message: `Válvula ${action === 'open' ? 'abierta' : 'cerrada'} correctamente`
+    });
+  } catch (err) {
+    console.error('Error controlando válvula:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/valve/status
+ * Responde con el estado actual de la válvula
+ */
+app.get('/api/valve/status', (req, res) => {
+  res.json({
+    success: true,
+    status: valveState.status,
+    flowRate: valveState.flowRate,
+    pressure: valveState.pressure,
+    lastUpdate: valveState.lastUpdate
+  });
+});
+
+/**
+ * GET /api/valve/history
+ * Responde con el historial de actividad
+ */
+app.get('/api/valve/history', (req, res) => {
+  res.json({
+    success: true,
+    history: valveHistory.slice(0, 10) // Últimas 10
+  });
+});
+
+/**
+ * POST /api/valve/schedule
+ * Body: { action: 'open' | 'closed', time: 'HH:MM', days: [0-6] }
+ * Crea una nueva programación
+ */
+app.post('/api/valve/schedule', (req, res) => {
+  try {
+    const { action, time, days } = req.body;
+
+    if (!action || !time || !days || !Array.isArray(days)) {
+      return res.status(400).json({ success: false, error: 'Invalid schedule data' });
+    }
+
+    const newSchedule = {
+      id: scheduleIdCounter++,
+      action,
+      time,
+      days,
+      created: new Date().toISOString()
+    };
+
+    valveSchedules.push(newSchedule);
+    saveValveData();
+
+    console.log(`[PROGRAMACIÓN] Nueva: ${action} a las ${time}`);
+
+    res.json({
+      success: true,
+      schedule: newSchedule,
+      message: 'Programación creada correctamente'
+    });
+  } catch (err) {
+    console.error('Error creando programación:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/valve/schedules
+ * Responde con todas las programaciones
+ */
+app.get('/api/valve/schedules', (req, res) => {
+  res.json({
+    success: true,
+    schedules: valveSchedules
+  });
+});
+
+/**
+ * DELETE /api/valve/schedule/:id
+ * Elimina una programación
+ */
+app.delete('/api/valve/schedule/:id', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const index = valveSchedules.findIndex(s => s.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ success: false, error: 'Schedule not found' });
+    }
+
+    valveSchedules.splice(index, 1);
+    saveValveData();
+
+    console.log(`[PROGRAMACIÓN] Eliminada: ${id}`);
+
+    res.json({
+      success: true,
+      message: 'Programación eliminada correctamente'
+    });
+  } catch (err) {
+    console.error('Error eliminando programación:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Endpoint de salud del servidor
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     sensores_activos: Object.keys(sensorData).length

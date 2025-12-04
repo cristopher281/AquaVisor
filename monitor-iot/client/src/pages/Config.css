@@ -1,0 +1,568 @@
+/* Config Page */
+.config-page {
+    animation: fadeIn 0.6s ease;
+}
+
+.header-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 8px 0;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+}
+
+/* Valve Control Panel - Panel Principal */
+.valve-control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.valve-status-display {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.valve-status-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: var(--gradient-primary);
+}
+
+.status-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.status-text {
+    font-size: 48px;
+    font-weight: 800;
+    margin: 16px 0 32px 0;
+    letter-spacing: 2px;
+}
+
+.status-text.open {
+    background: linear-gradient(135deg, #10b981, #059669);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.status-text.closed {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.valve-icon-container {
+    margin: 32px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.valve-icon {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    position: relative;
+    transition: all 0.5s ease;
+}
+
+.valve-icon.open {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+    color: var(--accent-green);
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+    animation: pulseGreen 2s ease-in-out infinite;
+}
+
+.valve-icon.closed {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+    color: var(--accent-red);
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes pulseGreen {
+
+    0%,
+    100% {
+        box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 60px rgba(16, 185, 129, 0.6);
+    }
+}
+
+.valve-toggle-btn {
+    width: 200px;
+    margin: 32px auto 24px auto;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.valve-toggle-btn.open {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.valve-toggle-btn.open:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(239, 68, 68, 0.4);
+}
+
+.valve-toggle-btn.closed {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.valve-toggle-btn.closed:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
+}
+
+.valve-toggle-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.status-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Métricas */
+.valve-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.metric-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.metric-icon {
+    font-size: 24px;
+    color: var(--accent-blue);
+}
+
+.metric-card.pressure .metric-icon {
+    color: var(--accent-yellow);
+}
+
+.metric-value {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 12px;
+}
+
+.metric-unit {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 8px;
+}
+
+.metric-bar {
+    height: 8px;
+    background: rgba(var(--accent-blue-rgb, 59, 130, 246), 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.metric-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.metric-bar-fill.yellow {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+/* Sidebar Derecho */
+.config-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Panel de Actividad */
+.activity-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+}
+
+.activity-panel h3,
+.schedule-panel h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(var(--accent-blue-rgb, 59, 130, 246), 0.05);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.activity-item:hover {
+    background: rgba(var(--accent-blue-rgb, 59, 130, 246), 0.08);
+}
+
+[data-theme="claro"] .activity-item {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="claro"] .activity-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.activity-status {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.activity-status.open {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-green);
+}
+
+.activity-status.closed {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-red);
+}
+
+.activity-details {
+    flex: 1;
+}
+
+.activity-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.activity-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.activity-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.no-activity,
+.no-schedules {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+}
+
+.no-activity svg,
+.no-schedules svg {
+    font-size: 32px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+}
+
+/* Panel de Programación */
+.schedule-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+}
+
+.add-schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: rgba(var(--accent-blue-rgb, 59, 130, 246), 0.05);
+    border-radius: 12px;
+}
+
+[data-theme="claro"] .add-schedule {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.schedule-input {
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.schedule-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.days-selector {
+    display: flex;
+    gap: 6px;
+}
+
+.day-btn {
+    flex: 1;
+    min-width: 32px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.day-btn:hover {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.day-btn.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: white;
+}
+
+.add-schedule-btn {
+    padding: 10px 16px;
+    background: var(--accent-blue);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.add-schedule-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.schedules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.schedule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: all var(--transition-fast);
+}
+
+.schedule-item:hover {
+    border-color: var(--accent-blue);
+}
+
+.schedule-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.schedule-action {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    width: fit-content;
+}
+
+.schedule-action.open {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-green);
+}
+
+.schedule-action.closed {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-red);
+}
+
+.schedule-time {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.schedule-days {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.delete-schedule-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.delete-schedule-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-red);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .valve-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .valve-status-display {
+        padding: 30px 20px;
+    }
+
+    .status-text {
+        font-size: 36px;
+    }
+
+    .valve-icon {
+        width: 100px;
+        height: 100px;
+        font-size: 50px;
+    }
+
+    .metric-value {
+        font-size: 32px;
+    }
+
+    .days-selector {
+        flex-wrap: wrap;
+    }
+}
