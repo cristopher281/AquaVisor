@@ -103,8 +103,8 @@ function CommandCenter() {
         <p>Cargando datos...</p>
       ) : (
         <>
-          <div className="metrics-grid">
-            <MetricCard title="Valor Actual" value={`${metrics.averageFlow} m³`} change="+9%" trend="up" subtitle="vs ayer" />
+            <div className="metrics-grid">
+            <MetricCard title="Valor Actual" value={`${metrics.averageFlow} L`} change="+9%" trend="up" subtitle="vs ayer" />
             <MetricCard title="Nivel Promedio" value="7.9 m" change="-0.5%" trend="down" subtitle="Promedio horario" />
             <MetricCard title="Alertas Críticas" value="5" change="+2" trend="up" subtitle="Activas" />
             <MetricCard title="Estado Sistema" value="Operativo" status="operational" subtitle={`${metrics.operationalSensors} sensores activos`} />
@@ -112,7 +112,7 @@ function CommandCenter() {
 
           <div className="dashboard-grid">
             <div className="chart-section">
-              <Chart elementId="dashboard-chart" data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length-1].value : metrics.averageFlow} m³`} />
+              <Chart elementId="dashboard-chart" data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length-1].value : metrics.averageFlow} L`} />
 
               <div className="bottom-metrics">
                 <WaterQualityMetrics />

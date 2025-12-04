@@ -24,7 +24,7 @@ function ThreeSensorPanel({ sensors = [] }) {
           </div>
 
           <div className="main-card-body">
-            <div className="total-value">{computedTotal !== undefined ? `${computedTotal} m³/min` : '-'} </div>
+            <div className="total-value">{computedTotal !== undefined ? `${computedTotal} L/min` : '-'} </div>
             <div className="total-note">Representa el caudal del sensor principal o la suma de secundarios</div>
             {main && <div className="main-source">Fuente: Sensor {main.sensor_id}</div>}
           </div>

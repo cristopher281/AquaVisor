@@ -195,10 +195,15 @@ app.post('/api/sensor-data', (req, res) => {
       return res.status(400).json({ error: 'caudal_min y total_acumulado deben ser numéricos' });
     }
 
+    // Los sensores envían valores en mililitros (mL). Convertir a litros (L) para
+    // que todo el sistema trabaje con litros y el frontend muestre L.
+    const caudalLiters = caudalNum / 1000; // mL -> L
+    const totalLiters = totalNum / 1000; // mL -> L
+
     const data = {
       sensor_id: String(sensor_id),
-      caudal_min: caudalNum,
-      total_acumulado: totalNum,
+      caudal_min: Number(caudalLiters.toFixed(3)),
+      total_acumulado: Number(totalLiters.toFixed(3)),
       hora: String(hora),
       ultima_actualizacion: new Date().toISOString()
     };

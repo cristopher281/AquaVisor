@@ -29,7 +29,7 @@ function SensorCard({ sensor }) {
             <div className="metric-label">Caudal</div>
             <div className="metric-value-large">
               {caudal_min !== undefined ? caudal_min : '-'}
-              <span className="metric-unit">m³/min</span>
+              <span className="metric-unit">L/min</span>
             </div>
           </div>
         </div>
@@ -38,7 +38,7 @@ function SensorCard({ sensor }) {
           <div className="metric-item">
             <div className="metric-label-small">Total Acumulado</div>
             <div className="metric-value-medium">
-              {total_acumulado !== undefined ? total_acumulado : '-'}
+              {total_acumulado !== undefined ? `${total_acumulado} L` : '-'}
             </div>
           </div>
           <div className="metric-item">

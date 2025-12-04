@@ -26,12 +26,12 @@ function Alerts() {
                 title: 'Flujo Crítico',
                 sensor: s.sensor_id,
                 time: s.hora,
-                message: `El caudal ha excedido el umbral crítico de 12 m³/min`,
-                value: `${s.caudal_min} m³/min`,
+                message: `El caudal ha excedido el umbral crítico de 12 L/min`,
+                value: `${s.caudal_min} L/min`,
                 details: {
                   timestamp: new Date().toISOString(),
-                  threshold: '12 m³/min',
-                  current: `${s.caudal_min} m³/min`,
+                  threshold: '12 L/min',
+                  current: `${s.caudal_min} L/min`,
                   exceeded: `${((s.caudal_min - 12) / 12 * 100).toFixed(1)}%`,
                   location: `Sensor ${s.sensor_id}`,
                   recommendations: [
@@ -49,12 +49,12 @@ function Alerts() {
                 title: 'Acumulado Alto',
                 sensor: s.sensor_id,
                 time: s.hora,
-                message: `El total acumulado supera los 100 m³`,
-                value: `${s.total_acumulado} m³`,
+                message: `El total acumulado supera los 100 L`,
+                value: `${s.total_acumulado} L`,
                 details: {
                   timestamp: new Date().toISOString(),
-                  threshold: '100 m³',
-                  current: `${s.total_acumulado} m³`,
+                  threshold: '100 L',
+                  current: `${s.total_acumulado} L`,
                   exceeded: `${((s.total_acumulado - 100) / 100 * 100).toFixed(1)}%`,
                   location: `Sensor ${s.sensor_id}`,
                   recommendations: [
@@ -77,11 +77,11 @@ function Alerts() {
                 sensor: s.sensor_id,
                 time: s.hora,
                 message: 'Todos los parámetros dentro del rango normal',
-                value: `${s.caudal_min} m³/min`,
+                value: `${s.caudal_min} L/min`,
                 details: {
                   timestamp: new Date().toISOString(),
                   threshold: 'N/A',
-                  current: `${s.caudal_min} m³/min`,
+                  current: `${s.caudal_min} L/min`,
                   location: `Sensor ${s.sensor_id}`,
                   recommendations: ['Sistema funcionando correctamente']
                 }

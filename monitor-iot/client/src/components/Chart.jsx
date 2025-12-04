@@ -70,7 +70,7 @@ function Chart({ data, title, currentValue, elementId }) {
             return (
                 <div className="custom-tooltip glass">
                     <p className="tooltip-label">{payload[0].payload.time}</p>
-                    <p className="tooltip-value">{payload[0].value} m³</p>
+                    <p className="tooltip-value">{payload[0].value} L</p>
                 </div>
             );
         }
@@ -138,14 +138,14 @@ function Chart({ data, title, currentValue, elementId }) {
                             style={{ fontSize: '12px', fill: chartColors.text }}
                         />
                         <Tooltip content={<CustomTooltip />} />
-                        <Area
+                            <Area
                             type="monotone"
                             dataKey="value"
                             stroke="#3b82f6"
                             strokeWidth={3}
                             fill="url(#colorValue)"
                             animationDuration={1000}
-                            dot={<CustomDot />}
+                                dot={<CustomDot />}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

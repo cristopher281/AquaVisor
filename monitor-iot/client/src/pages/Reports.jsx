@@ -124,7 +124,7 @@ function Reports() {
               </button>
             </div>
 
-            <Chart data={chartData} title={`Rendimiento Histórico: ${selectedSensor || ''}`} currentValue={`${chartData.length ? chartData[chartData.length - 1].value : '-'} m³`} />
+            <Chart data={chartData} title={`Rendimiento Histórico: ${selectedSensor || ''}`} currentValue={`${chartData.length ? chartData[chartData.length - 1].value : '-'} L`} />
           </div>
 
           <div className="reports-table-container">
@@ -141,8 +141,8 @@ function Reports() {
                   <tr>
                     <th>Fecha</th>
                     <th>Sensor</th>
-                    <th>Caudal (m³/min)</th>
-                    <th>Total Acumulado</th>
+                    <th>Caudal (L/min)</th>
+                    <th>Total Acumulado (L)</th>
                   </tr>
                 </thead>
                 <tbody>
