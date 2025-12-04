@@ -860,5 +860,4 @@ Para cada tema (Medianoche, Neón, Cobalto, Claro):
 ---
 
 **Documento mantenido por:** Equipo de Desarrollo AquaVisor  
-**Contacto:** [Agregar información de contacto]  
 **Última revisión:** 3 de diciembre de 2025
