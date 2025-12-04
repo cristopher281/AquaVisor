@@ -12,6 +12,9 @@ function CommandCenter() {
   const [sensors, setSensors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState([]);
+  const [pctChange, setPctChange] = useState(null);
+  const [pctTrend, setPctTrend] = useState('neutral');
+  const [pctTooltip, setPctTooltip] = useState('');
 
   const fetchDashboard = async () => {
     try {
@@ -116,6 +119,70 @@ function CommandCenter() {
     return { averageFlow: avg.toFixed(1), operationalSensors: sensors.length };
   })();
 
+  // Obtener promedio de ayer desde el servidor y calcular % de cambio frente al promedio actual
+  async function fetchYesterdayAverage() {
+    try {
+      const res = await fetch('/api/average-yesterday?mode=rolling24h');
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (json && json.success) return json; // devuelve objeto con average/previousAverage/etc
+    } catch (e) {
+      console.warn('fetchYesterdayAverage error', e);
+    }
+    return null;
+  }
+
+  useEffect(() => {
+    // cuando cambie el promedio calculado, obtener promedio de ayer y calcular %
+    let mounted = true;
+    (async () => {
+      try {
+        const currStr = metrics.averageFlow;
+        const curr = Number(currStr);
+        if (Number.isNaN(curr)) {
+          if (mounted) { setPctChange(null); setPctTrend('neutral'); }
+          return;
+        }
+
+        const resp = await fetchYesterdayAverage();
+        if (!mounted) return;
+        if (!resp) {
+          setPctChange(null); setPctTrend('neutral'); setPctTooltip('');
+        } else {
+          // resp puede tener: average, previousAverage, samples, previousSamples, mode
+          const avg = resp.average;
+          const prev = resp.previousAverage !== undefined ? resp.previousAverage : resp.average; // si no hay previous, usar average (no hay cambio)
+          const samples = resp.samples || 0;
+          const prevSamples = resp.previousSamples || 0;
+
+          if (prev === null || prev === 0 || avg === null) {
+            setPctChange(null);
+            setPctTrend('neutral');
+            // tooltip: mostrar valores disponibles
+            const tip = resp.mode === 'rolling24h'
+              ? `Últimas 24h: ${avg !== null ? avg + ' L' : 'N/D'} (${samples} muestras) — Prev 24-48h: ${resp.previousAverage !== null ? resp.previousAverage + ' L' : 'N/D'} (${prevSamples} muestras)`
+              : `Ayer: ${avg !== null ? avg + ' L' : 'N/D'} (${samples} muestras)`;
+            setPctTooltip(tip);
+          } else {
+            const diff = Number(curr) - Number(prev);
+            const pct = (diff / Math.abs(Number(prev))) * 100;
+            const sign = pct >= 0 ? '+' : '';
+            setPctChange(`${sign}${pct.toFixed(1)}%`);
+            setPctTrend(pct > 0 ? 'up' : (pct < 0 ? 'down' : 'neutral'));
+            const tip = resp.mode === 'rolling24h'
+              ? `Últimas 24h: ${avg} L (${samples} muestras) — Prev 24-48h: ${resp.previousAverage !== null ? resp.previousAverage + ' L' : 'N/D'} (${prevSamples} muestras)`
+              : `Ayer: ${avg} L (${samples} muestras)`;
+            setPctTooltip(tip);
+          }
+        }
+      } catch (err) {
+        console.warn('Error calculando cambio vs ayer', err);
+        if (mounted) { setPctChange(null); setPctTrend('neutral'); }
+      }
+    })();
+    return () => { mounted = false; };
+  }, [metrics.averageFlow]);
+
   return (
     <div className="page command-center">
       <header className="page-header">
@@ -127,7 +194,7 @@ function CommandCenter() {
       ) : (
         <>
             <div className="metrics-grid">
-            <MetricCard title="Valor Actual" value={`${metrics.averageFlow} L`} change="+9%" trend="up" subtitle="vs ayer" />
+            <MetricCard title="Valor Actual" value={`${metrics.averageFlow} L`} change={pctChange || 'N/A'} trend={pctTrend || 'neutral'} subtitle="vs ayer" tooltip={pctTooltip} />
             <MetricCard title="Nivel Promedio" value="7.9 m" change="-0.5%" trend="down" subtitle="Promedio horario" />
             <MetricCard title="Alertas Críticas" value="5" change="+2" trend="up" subtitle="Activas" />
             <MetricCard title="Estado Sistema" value="Operativo" status="operational" subtitle={`${metrics.operationalSensors} sensores activos`} />

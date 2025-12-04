@@ -1,6 +1,6 @@
 import './MetricCard.css';
 
-function MetricCard({ title, value, change, trend, subtitle, status }) {
+function MetricCard({ title, value, change, trend, subtitle, status, tooltip }) {
     const getTrendIcon = () => {
         if (status === 'operational') return '✓';
         if (trend === 'up') return '↑';
@@ -27,7 +27,7 @@ function MetricCard({ title, value, change, trend, subtitle, status }) {
                         {value}
                     </h2>
                     {change && (
-                        <div className={`metric-change ${getTrendClass()}`}>
+                        <div className={`metric-change ${getTrendClass()}`} title={tooltip || ''}>
                             <span className="change-icon">{getTrendIcon()}</span>
                             <span className="change-value">{change}</span>
                         </div>

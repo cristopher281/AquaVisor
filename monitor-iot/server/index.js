@@ -269,6 +269,102 @@ app.get('/api/reports', (req, res) => {
 });
 
 /**
+ * GET /api/average-yesterday
+ * Opcional query: sensor_id=<id>
+ * Responde: { success: true, average: <number|null>, samples: <count>, sensor_id?: <id> }
+ * Calcula el promedio de `caudal_min` para el día calendario de ayer (00:00-23:59) usando el historial en memoria.
+ */
+app.get('/api/average-yesterday', (req, res) => {
+  try {
+    const { sensor_id, mode } = req.query;
+    const now = Date.now();
+    const MS_DAY = 24 * 60 * 60 * 1000;
+
+    // Utilidad para parsear timestamp de una entrada
+    const parseTime = (e) => {
+      const t = e.ultima_actualizacion || e.ts || e.hora || null;
+      if (!t) return NaN;
+      const time = new Date(t).getTime();
+      return Number.isFinite(time) ? time : NaN;
+    };
+
+    // Recoger valores en un rango [start, end)
+    const collectValuesInRange = (startMs, endMs) => {
+      const vals = [];
+      if (sensor_id) {
+        const arr = sensorHistory[sensor_id] || [];
+        (arr || []).forEach(e => {
+          const t = parseTime(e);
+          if (!Number.isNaN(t) && t >= startMs && t < endMs) {
+            const v = parseFloat(e.caudal_min);
+            if (!Number.isNaN(v)) vals.push(v);
+          }
+        });
+      } else {
+        Object.values(sensorHistory).forEach(arr => {
+          (arr || []).forEach(e => {
+            const t = parseTime(e);
+            if (!Number.isNaN(t) && t >= startMs && t < endMs) {
+              const v = parseFloat(e.caudal_min);
+              if (!Number.isNaN(v)) vals.push(v);
+            }
+          });
+        });
+      }
+      return vals;
+    };
+
+    if (mode && mode.toString() === 'rolling24h') {
+      // Ventana actual: últimas 24 horas
+      const windowEnd = now;
+      const windowStart = now - MS_DAY;
+      const prevStart = now - 2 * MS_DAY;
+      const prevEnd = now - MS_DAY;
+
+      const valsNow = collectValuesInRange(windowStart, windowEnd);
+      const valsPrev = collectValuesInRange(prevStart, prevEnd);
+
+      const summarize = (arr) => {
+        if (!arr || arr.length === 0) return { average: null, samples: 0 };
+        const sum = arr.reduce((a, b) => a + b, 0);
+        return { average: Number((sum / arr.length).toFixed(3)), samples: arr.length };
+      };
+
+      const nowSummary = summarize(valsNow);
+      const prevSummary = summarize(valsPrev);
+
+      return res.status(200).json({
+        success: true,
+        mode: 'rolling24h',
+        average: nowSummary.average,
+        samples: nowSummary.samples,
+        previousAverage: prevSummary.average,
+        previousSamples: prevSummary.samples,
+        sensor_id: sensor_id || undefined
+      });
+    }
+
+    // Modo por defecto: "calendar" — día calendario de ayer
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const start = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0).getTime();
+    const end = start + MS_DAY;
+
+    const vals = collectValuesInRange(start, end);
+    if (vals.length === 0) {
+      return res.status(200).json({ success: true, mode: 'calendar', average: null, samples: 0, sensor_id: sensor_id || undefined, message: 'No hay muestras para ayer en el historial' });
+    }
+    const sum = vals.reduce((a, b) => a + b, 0);
+    const avg = Number((sum / vals.length).toFixed(3));
+    return res.status(200).json({ success: true, mode: 'calendar', average: avg, samples: vals.length, sensor_id: sensor_id || undefined });
+  } catch (err) {
+    console.error('Error calculando average-yesterday:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * Generar reporte técnico descargable (CSV)
  * GET /api/generate-report
  */
