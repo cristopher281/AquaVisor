@@ -4,6 +4,8 @@ import { FiAlertTriangle, FiBarChart2, FiCheckCircle, FiRadio } from 'react-icon
 
 function AlertsPanel({ sensors }) {
     const [alerts, setAlerts] = useState([]);
+    const [alertTrend, setAlertTrend] = useState('neutral'); // 'up' | 'down' | 'neutral'
+    const prevAlertsCountRef = { current: 0 };
 
     // Función para guardar reporte en localStorage
     const saveReportToHistory = (filename, type = 'CSV') => {
@@ -129,11 +131,21 @@ function AlertsPanel({ sensors }) {
         setAlerts(generatedAlerts.slice(0, 5)); // Máximo 5 alertas
     }, [sensors]);
 
+    // Detectar cambio en el conteo de alertas para mostrar tendencia (color)
+    useEffect(() => {
+        const curr = alerts.length;
+        const prev = Number(prevAlertsCountRef.current || 0);
+        if (curr > prev) setAlertTrend('up');
+        else if (curr < prev) setAlertTrend('down');
+        else setAlertTrend('neutral');
+        prevAlertsCountRef.current = curr;
+    }, [alerts]);
+
     return (
         <div className="alerts-panel glass">
             <div className="alerts-header">
                 <h3 className="alerts-title">ALERTAS ACTIVAS</h3>
-                <span className="alerts-count">{alerts.length}</span>
+                <span className={`alerts-count ${alertTrend === 'up' ? 'danger' : (alertTrend === 'down' ? 'success' : 'neutral')}`} title={alertTrend === 'up' ? 'Aumento de alertas' : (alertTrend === 'down' ? 'Disminución de alertas' : 'Sin cambio')}>{alerts.length}</span>
             </div>
 
             <div className="alerts-list">
