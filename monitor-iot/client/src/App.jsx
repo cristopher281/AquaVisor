@@ -8,6 +8,7 @@ import CommandCenter from './pages/CommandCenter';
 import Reports from './pages/Reports';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
+import Valve from './pages/Valve';
 
 function App() {
     // Cargar tema guardado al iniciar la aplicación
@@ -32,6 +33,7 @@ function App() {
                         <Route path="/" element={<CommandCenter />} />
                         <Route path="/reportes" element={<Reports />} />
                         <Route path="/alertas" element={<Alerts />} />
+                        <Route path="/valvula" element={<Valve />} />
                         <Route path="/config" element={<Settings />} />
                         <Route path="*" element={<CommandCenter />} />
                     </Routes>

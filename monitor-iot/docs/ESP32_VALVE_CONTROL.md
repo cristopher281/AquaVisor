@@ -1,12 +1,12 @@
-# 🎛️ Documentación: Control de Válvulas desde ESP32
+#  Documentación: Control de Válvulas desde ESP32
 
-## 📡 Protocolo de Comunicación
+##  Protocolo de Comunicación
 
 El ESP32 puede **controlar válvulas** y **recibir comandos** del servidor AquaVisor mediante HTTP.
 
 ---
 
-## 🔄 Flujo de Control
+## Flujo de Control
 
 ```
 ┌──────────┐      HTTP GET      ┌──────────┐      Control      ┌─────────┐
@@ -17,7 +17,7 @@ El ESP32 puede **controlar válvulas** y **recibir comandos** del servidor AquaV
 
 ---
 
-## 📥 1. Recibir Comandos (ESP32 consulta al servidor)
+##  1. Recibir Comandos (ESP32 consulta al servidor)
 
 ### Endpoint: `GET /api/valve/status`
 
@@ -147,7 +147,7 @@ void sendValveFeedback(String action) {
 
 ---
 
-## 📤 2. Respuesta del Servidor
+##  2. Respuesta del Servidor
 
 ### Formato JSON:
 
@@ -173,7 +173,7 @@ void sendValveFeedback(String action) {
 
 ---
 
-## 🔌 3. Conexión Física (Hardware)
+##  3. Conexión Física (Hardware)
 
 ### Esquema Básico:
 
@@ -212,7 +212,7 @@ const int PRESSURE_PIN = 34;    // GPIO34 (ADC) para sensor de presión
 
 ---
 
-## 🕐 4. Programación de Horarios
+##  4. Programación de Horarios
 
 Las programaciones se ejecutan automáticamente en el servidor. El ESP32 solo necesita consultar el estado y obedecer.
 
@@ -231,7 +231,7 @@ El servidor automáticamente enviará el comando `"open"` a las 6:00 AM de Lunes
 
 ---
 
-## 📊 5. Envío de Métricas al Servidor (Opcional)
+##  5. Envío de Métricas al Servidor (Opcional)
 
 Si tu ESP32 tiene sensores de flujo/presión, puedes enviar los valores reales:
 
@@ -268,7 +268,7 @@ if (millis() - lastMetricsSent > 5000) { // Cada 5 segundos
 
 ---
 
-## 🔒 6. Seguridad y Manejo de Errores
+##  6. Seguridad y Manejo de Errores
 
 ### Timeout de Conexión:
 
@@ -305,7 +305,7 @@ void loop() {
 
 ---
 
-## 🧪 7. Pruebas
+##  7. Pruebas
 
 ### 1. Probar Conexión:
 
@@ -334,7 +334,7 @@ void testConnection() {
 
 ---
 
-## 📋 Checklist de Implementación
+##  Checklist de Implementación
 
 - [ ] ESP32 conectado a WiFi
 - [ ] IP del servidor configurada correctamente
@@ -349,7 +349,7 @@ void testConnection() {
 
 ---
 
-## 🆘 Troubleshooting
+##  Troubleshooting
 
 ### Problema: ESP32 no se conecta al servidor
 
@@ -375,7 +375,7 @@ void testConnection() {
 
 ---
 
-## 📚 Librerías Necesarias
+##  Librerías Necesarias
 
 Instalar en Arduino IDE:
 
@@ -390,7 +390,7 @@ Instalar en Arduino IDE:
 
 ---
 
-## 🎯 Ejemplo Completo Funcional
+##  Ejemplo Completo Funcional
 
 Ver archivo: `esp32_valve_control_complete.ino` en el repositorio para código completo probado y listo para usar.
 

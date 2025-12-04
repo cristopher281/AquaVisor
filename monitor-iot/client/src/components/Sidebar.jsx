@@ -10,6 +10,7 @@ function Sidebar() {
         { to: '/', icon: <FiBarChart2 />, label: 'Centro comando' },
         { to: '/reportes', icon: <FiFileText />, label: 'Reportes' },
         { to: '/alertas', icon: <FiBell />, label: 'Alertas Críticas' },
+        { to: '/valvula', icon: <FiDroplet />, label: 'Control de Válvula' },
         { to: '/config', icon: <FiSettings />, label: 'Configuración' },
     ];
 
