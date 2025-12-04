@@ -1,6 +1,6 @@
 import './MetricCard.css';
 
-function MetricCard({ title, value, change, trend, subtitle, status, tooltip }) {
+function MetricCard({ title, value, change, trend, subtitle, status, tooltip, invertTrend = false }) {
     const getTrendIcon = () => {
         if (status === 'operational') return '✓';
         if (trend === 'up') return '↑';
@@ -10,6 +10,12 @@ function MetricCard({ title, value, change, trend, subtitle, status, tooltip }) 
 
     const getTrendClass = () => {
         if (status === 'operational') return 'success';
+        // Si invertTrend es true, invertir la semántica de colores: subida = peligro (rojo)
+        if (invertTrend) {
+            if (trend === 'up') return 'danger';
+            if (trend === 'down') return 'success';
+            return 'neutral';
+        }
         if (trend === 'up') return 'success';
         if (trend === 'down') return 'danger';
         return 'neutral';

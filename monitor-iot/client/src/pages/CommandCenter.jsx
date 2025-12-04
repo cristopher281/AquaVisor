@@ -114,9 +114,11 @@ function CommandCenter() {
   }
 
   const metrics = (() => {
-    if (sensors.length === 0) return { averageFlow: 0, operationalSensors: 0 };
+    if (sensors.length === 0) return { averageFlow: 0, operationalSensors: 0, averageVolume: 0 };
     const avg = sensors.reduce((s, x) => s + (x.caudal_min || 0), 0) / sensors.length;
-    return { averageFlow: avg.toFixed(1), operationalSensors: sensors.length };
+    // averageVolume: promedio de `total_acumulado` (ya está en litros en el backend)
+    const avgVol = sensors.reduce((s, x) => s + (x.total_acumulado || 0), 0) / sensors.length;
+    return { averageFlow: avg.toFixed(1), operationalSensors: sensors.length, averageVolume: Number(avgVol.toFixed(1)) };
   })();
 
   // Obtener promedio de ayer desde el servidor y calcular % de cambio frente al promedio actual
@@ -194,8 +196,8 @@ function CommandCenter() {
       ) : (
         <>
             <div className="metrics-grid">
-            <MetricCard title="Valor Actual" value={`${metrics.averageFlow} L`} change={pctChange || 'N/A'} trend={pctTrend || 'neutral'} subtitle="vs ayer" tooltip={pctTooltip} />
-            <MetricCard title="Nivel Promedio" value="7.9 m" change="-0.5%" trend="down" subtitle="Promedio horario" />
+            <MetricCard title="Valor Actual" value={`${metrics.averageFlow} L`} change={pctChange || 'N/A'} trend={pctTrend || 'neutral'} subtitle="vs ayer" tooltip={pctTooltip} invertTrend={true} />
+            <MetricCard title="Nivel (L)" value={`${metrics.averageVolume} L`} change="-0.5%" trend="down" subtitle="Total acumulado (promedio)" />
             <MetricCard title="Alertas Críticas" value="5" change="+2" trend="up" subtitle="Activas" />
             <MetricCard title="Estado Sistema" value="Operativo" status="operational" subtitle={`${metrics.operationalSensors} sensores activos`} />
           </div>
