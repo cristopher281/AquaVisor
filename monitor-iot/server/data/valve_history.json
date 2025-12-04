@@ -1,0 +1,30 @@
+[
+  {
+    "action": "closed",
+    "operator": "Operador 1",
+    "source": "web",
+    "time": "21:02:35",
+    "timestamp": "2025-12-04T03:02:35.613Z"
+  },
+  {
+    "action": "open",
+    "operator": "Operador 1",
+    "source": "web",
+    "time": "21:02:34",
+    "timestamp": "2025-12-04T03:02:34.437Z"
+  },
+  {
+    "action": "closed",
+    "operator": "Operador 1",
+    "source": "web",
+    "time": "21:02:33",
+    "timestamp": "2025-12-04T03:02:33.571Z"
+  },
+  {
+    "action": "open",
+    "operator": "Operador 1",
+    "source": "web",
+    "time": "21:02:29",
+    "timestamp": "2025-12-04T03:02:29.800Z"
+  }
+]
