@@ -31,24 +31,53 @@ function AlertsPanel({ sensors }) {
     };
 
     useEffect(() => {
-        // Generar alertas basadas en datos de sensores
+        // Cargar umbrales desde settings en localStorage (si existen)
+        let settings = null;
+        try {
+            const raw = localStorage.getItem('acua_settings');
+            if (raw) settings = JSON.parse(raw);
+        } catch (e) {
+            console.warn('No fue posible leer settings desde localStorage:', e);
+        }
+
+        const topThreshold = settings && settings.thresholdTop ? parseFloat(settings.thresholdTop) : null;
+        const bottomThreshold = settings && settings.thresholdBottom ? parseFloat(settings.thresholdBottom) : null;
+
+        // Generar alertas basadas en datos de sensores y umbrales configurados
         const generatedAlerts = [];
 
         sensors.forEach(sensor => {
-            if (sensor.caudal_min > 15) {
-                generatedAlerts.push({
-                    id: `high-flow-${sensor.sensor_id}`,
-                    type: 'warning',
-                    icon: FiAlertTriangle,
-                    title: 'Flujo elevado detectado',
-                    sensor: `Sensor ${sensor.sensor_id}`,
-                    time: new Date(sensor.hora).toLocaleTimeString('es-ES', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })
-                });
+            const value = Number(sensor.caudal_min);
+            const timeStr = sensor.hora ? new Date(sensor.hora).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+            // Si hay umbrales configurados, priorizar su uso
+            if (topThreshold !== null && !Number.isNaN(topThreshold)) {
+                if (!Number.isNaN(value) && value > topThreshold) {
+                    generatedAlerts.push({
+                        id: `threshold-top-${sensor.sensor_id}`,
+                        type: 'warning',
+                        icon: FiAlertTriangle,
+                        title: `Nivel superior excedido (${value} m)`,
+                        sensor: `Sensor ${sensor.sensor_id}`,
+                        time: timeStr
+                    });
+                }
             }
 
+            if (bottomThreshold !== null && !Number.isNaN(bottomThreshold)) {
+                if (!Number.isNaN(value) && value < bottomThreshold) {
+                    generatedAlerts.push({
+                        id: `threshold-bottom-${sensor.sensor_id}`,
+                        type: 'info',
+                        icon: FiBarChart2,
+                        title: `Nivel por debajo del umbral (${value} m)`,
+                        sensor: `Sensor ${sensor.sensor_id}`,
+                        time: timeStr
+                    });
+                }
+            }
+
+            // Comportamiento previo: alertas por acumulado
             if (sensor.total_acumulado > 100) {
                 generatedAlerts.push({
                     id: `high-total-${sensor.sensor_id}`,
@@ -56,10 +85,7 @@ function AlertsPanel({ sensors }) {
                     icon: FiBarChart2,
                     title: 'Acumulado alto',
                     sensor: `Sensor ${sensor.sensor_id}`,
-                    time: new Date(sensor.hora).toLocaleTimeString('es-ES', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })
+                    time: timeStr
                 });
             }
         });

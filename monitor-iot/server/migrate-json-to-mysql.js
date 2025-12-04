@@ -80,8 +80,8 @@ async function main() {
         try {
           await pool.query(
             `INSERT INTO sensors (sensor_id, last_seen, caudal_min, total_acumulado, raw_json)
-             VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE last_seen = VALUES(last_seen), caudal_min = VALUES(caudal_min), total_acumulado = VALUES(total_acumulado), raw_json = VALUES(raw_json)`,
+              VALUES (?, ?, ?, ?, ?)
+              ON DUPLICATE KEY UPDATE last_seen = VALUES(last_seen), caudal_min = VALUES(caudal_min), total_acumulado = VALUES(total_acumulado), raw_json = VALUES(raw_json)`,
             [sensor_id, last_seen, data.caudal_min ?? null, data.total_acumulado ?? null, JSON.stringify(data)]
           );
         } catch (err) {
