@@ -22,6 +22,8 @@ const mysql = require('mysql2/promise');
 const PDFDocument = require('pdfkit');
 const fetch = require('node-fetch');
 
+// NOTE: ENABLE_PERSISTENCE se declara más abajo; no duplicar para evitar redeclaraciones.
+
 // Persistencia por defecto en disco (archivos JSON). Si hay vars de MySQL,
 // se intentará inicializar la conexión a MySQL y usarla como back-end.
 app.locals.dbConnected = false;
@@ -125,6 +127,11 @@ const SENSORS_FILE = path.join(DATA_DIR, 'sensors.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 
 function loadFromDisk() {
+  if (!ENABLE_PERSISTENCE) {
+    console.log('LOAD FROM DISK: persistencia desactivada — omitiendo carga desde disco.');
+    return;
+  }
+
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -147,6 +154,11 @@ function loadFromDisk() {
 }
 
 function saveToDisk() {
+  if (!ENABLE_PERSISTENCE) {
+    // Persistencia desactivada: no escribir en disco
+    return;
+  }
+
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(SENSORS_FILE, JSON.stringify(sensorData, null, 2), 'utf8');
@@ -156,12 +168,19 @@ function saveToDisk() {
   }
 }
 
-// Cargar al inicio
-loadFromDisk();
+// Cargar al inicio (solo si está habilitada la persistencia)
+if (ENABLE_PERSISTENCE) {
+  loadFromDisk();
+} else {
+  console.log('Persistencia desactivada: no se cargará ni guardará historial en disco.');
+}
 
-// Guardar periódicamente (cada 5s)
+// Guardar periódicamente (cada 5s) — solo si persistencia activada
 const SAVE_INTERVAL = 5000;
-const saveIntervalRef = setInterval(saveToDisk, SAVE_INTERVAL);
+let saveIntervalRef = null;
+if (ENABLE_PERSISTENCE) {
+  saveIntervalRef = setInterval(saveToDisk, SAVE_INTERVAL);
+}
 
 function pushHistory(sensor_id, entry) {
   if (!sensorHistory[sensor_id]) sensorHistory[sensor_id] = [];
@@ -217,6 +236,24 @@ app.post('/api/sensor-data', (req, res) => {
 
     // mantener historial en memoria
     try { pushHistory(sensor_id, { ...data, stored: 'memory' }); } catch (e) { /* ignore */ }
+
+    // Persistir en MySQL si está disponible (no bloqueante)
+    if (app.locals.dbConnected && mysqlPool) {
+      (async () => {
+        try {
+          const payloadJson = JSON.stringify(req.body);
+          await mysqlPool.execute('INSERT INTO history (sensor_id, ts, payload) VALUES (?, ?, ?)', [sensor_id, new Date(), payloadJson]);
+          await mysqlPool.execute(
+            `INSERT INTO sensors (sensor_id, last_seen, caudal_min, total_acumulado, raw_json)
+              VALUES (?, ?, ?, ?, ?)
+              ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen), caudal_min=VALUES(caudal_min), total_acumulado=VALUES(total_acumulado), raw_json=VALUES(raw_json)`,
+            [sensor_id, new Date(), caudalLiters, totalLiters, payloadJson]
+          );
+        } catch (err) {
+          console.error('Error guardando en MySQL:', err);
+        }
+      })();
+    }
 
     console.log(`[${new Date().toISOString()}] Datos recibidos del sensor ${sensor_id}:`, data);
 
@@ -447,7 +484,7 @@ const VALVE_SCHEDULES_FILE = path.join(DATA_DIR, 'valve_schedules.json');
 const VALVE_STATE_FILE = path.join(DATA_DIR, 'valve_state.json');
 
 // Cargar estado de válvula desde disco
-function loadFromDisk() {
+function loadValveData() {
   if (!ENABLE_PERSISTENCE) {
     console.log('Persistencia desactivada (ENABLE_PERSISTENCE=false). No se cargarán archivos desde disco.');
     return;
@@ -473,14 +510,7 @@ function loadFromDisk() {
   }
 }
 
-// Guardar periódicamente (cada 5s) — sólo si la persistencia está activa
-const SAVE_INTERVAL = 5000;
-let saveIntervalRef = null;
-if (ENABLE_PERSISTENCE) {
-  saveIntervalRef = setInterval(saveToDisk, SAVE_INTERVAL);
-} else {
-  console.log('Auto-guardado desactivado: no se escribirán archivos de historial en disco.');
-}
+// NOTA: el guardado periódico global ya está gestionado más arriba; aquí sólo guardamos datos de válvula cuando la persistencia está activa.
 function saveValveData() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
