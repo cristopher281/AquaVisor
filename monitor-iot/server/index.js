@@ -118,6 +118,8 @@ const sensorData = {};
 const sensorHistory = {};
 
 // Persistencia en disco (fallback cuando no hay conexión a una base de datos externa)
+// Se puede desactivar poniendo ENABLE_PERSISTENCE=false en el entorno.
+const ENABLE_PERSISTENCE = process.env.ENABLE_PERSISTENCE === undefined ? true : (process.env.ENABLE_PERSISTENCE !== 'false');
 const DATA_DIR = path.join(__dirname, 'data');
 const SENSORS_FILE = path.join(DATA_DIR, 'sensors.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
@@ -445,31 +447,40 @@ const VALVE_SCHEDULES_FILE = path.join(DATA_DIR, 'valve_schedules.json');
 const VALVE_STATE_FILE = path.join(DATA_DIR, 'valve_state.json');
 
 // Cargar estado de válvula desde disco
-function loadValveData() {
+function loadFromDisk() {
+  if (!ENABLE_PERSISTENCE) {
+    console.log('Persistencia desactivada (ENABLE_PERSISTENCE=false). No se cargarán archivos desde disco.');
+    return;
+  }
   try {
-    if (fs.existsSync(VALVE_STATE_FILE)) {
-      const raw = fs.readFileSync(VALVE_STATE_FILE, 'utf8');
-      Object.assign(valveState, JSON.parse(raw));
-    }
-    if (fs.existsSync(VALVE_HISTORY_FILE)) {
-      const raw = fs.readFileSync(VALVE_HISTORY_FILE, 'utf8');
-      valveHistory.push(...JSON.parse(raw));
-    }
-    if (fs.existsSync(VALVE_SCHEDULES_FILE)) {
-      const raw = fs.readFileSync(VALVE_SCHEDULES_FILE, 'utf8');
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+    if (fs.existsSync(SENSORS_FILE)) {
+      const raw = fs.readFileSync(SENSORS_FILE, 'utf8');
       const parsed = JSON.parse(raw);
-      valveSchedules.push(...parsed);
-      if (parsed.length > 0) {
-        scheduleIdCounter = Math.max(...parsed.map(s => s.id)) + 1;
-      }
+      Object.assign(sensorData, parsed);
+      console.log('Cargados sensores desde disco:', Object.keys(parsed).length);
     }
-    console.log('Datos de válvula cargados desde disco');
+
+    if (fs.existsSync(HISTORY_FILE)) {
+      const raw = fs.readFileSync(HISTORY_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      Object.assign(sensorHistory, parsed);
+      console.log('Cargado historial desde disco:', Object.keys(parsed).length);
+    }
   } catch (err) {
-    console.warn('No se pudieron cargar datos de válvula:', err.message);
+    console.warn('No se pudo cargar persistencia en disco:', err.message || err);
   }
 }
 
-// Guardar estado de válvula en disco
+// Guardar periódicamente (cada 5s) — sólo si la persistencia está activa
+const SAVE_INTERVAL = 5000;
+let saveIntervalRef = null;
+if (ENABLE_PERSISTENCE) {
+  saveIntervalRef = setInterval(saveToDisk, SAVE_INTERVAL);
+} else {
+  console.log('Auto-guardado desactivado: no se escribirán archivos de historial en disco.');
+}
 function saveValveData() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
