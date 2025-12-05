@@ -1,0 +1,23 @@
+# Render service definition for AquaVisor (monorepo)
+# This file defines two services: a Node web service for the backend and a
+# static site for the frontend. Adjust `region`, `plan` and `branch` as needed.
+services:
+  - type: web
+    name: acuavisor-server
+    env: node
+    region: oregon
+    plan: free
+    branch: main
+    root: monitor-iot/server
+    buildCommand: cd monitor-iot/server && npm install
+    startCommand: cd monitor-iot/server && npm start
+    healthCheckPath: /api/health
+
+staticSites:
+  - name: acuavisor-client
+    branch: main
+    root: monitor-iot/client
+    buildCommand: cd monitor-iot/client && npm install && npm run build
+    publishPath: monitor-iot/client/dist
+    plan: free
+    region: oregon

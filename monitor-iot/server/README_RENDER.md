@@ -36,6 +36,10 @@ Archivos importantes
 - `data/` - contiene persistencia JSON local (si está habilitada)
 - `reports/` - archivos PDF/CSV generados
 
+Archivos añadidos para despliegue
+- `render.yaml` (raíz del repo): definición de servicios para Render (backend + frontend static site)
+- `monitor-iot/server/Procfile`: comando `web: npm start` (opcional, útil en algunos entornos)
+
 Recomendaciones
 - Asegúrate de añadir los secretos (MySQL credentials) en el panel de Environment de Render.
 - Si quieres usar el servicio de MySQL de Render, crea primero la base de datos y copia las credenciales a las variables de entorno.
