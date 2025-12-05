@@ -44,5 +44,3 @@ Recomendaciones
 - Asegúrate de añadir los secretos (MySQL credentials) en el panel de Environment de Render.
 - Si quieres usar el servicio de MySQL de Render, crea primero la base de datos y copia las credenciales a las variables de entorno.
 
-Soporte
-Si quieres, puedo generar un `render.yaml` con la definición del servicio y un `Procfile` si lo prefieres.
