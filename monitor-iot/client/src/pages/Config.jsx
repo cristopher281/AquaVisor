@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config';
 import { FiDroplet, FiToggleLeft, FiToggleRight, FiClock, FiActivity, FiAlertCircle, FiTrendingUp, FiUser, FiCalendar, FiPlus, FiTrash2 } from 'react-icons/fi';
 import './Config.css';
 
@@ -31,7 +32,7 @@ function Config() {
 
     const fetchValveStatus = async () => {
         try {
-            const res = await fetch('/api/valve/status');
+            const res = await fetch(`${API_URL}/api/valve/status`);
             const data = await res.json();
             if (data.success) {
                 setValveStatus(data.status);
@@ -45,7 +46,7 @@ function Config() {
 
     const fetchRecentActivity = async () => {
         try {
-            const res = await fetch('/api/valve/history');
+            const res = await fetch(`${API_URL}/api/valve/history`);
             const data = await res.json();
             if (data.success) {
                 setRecentActivity(data.history || []);
@@ -57,7 +58,7 @@ function Config() {
 
     const fetchSchedules = async () => {
         try {
-            const res = await fetch('/api/valve/schedules');
+            const res = await fetch(`${API_URL}/api/valve/schedules`);
             const data = await res.json();
             if (data.success) {
                 setSchedules(data.schedules || []);
@@ -72,7 +73,7 @@ function Config() {
         const newStatus = valveStatus === 'open' ? 'closed' : 'open';
 
         try {
-            const res = await fetch('/api/valve/control', {
+            const res = await fetch(`${API_URL}/api/valve/control`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -101,7 +102,7 @@ function Config() {
         }
 
         try {
-            const res = await fetch('/api/valve/schedule', {
+            const res = await fetch(`${API_URL}/api/valve/schedule`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newSchedule)
@@ -119,7 +120,7 @@ function Config() {
 
     const deleteSchedule = async (id) => {
         try {
-            const res = await fetch(`/api/valve/schedule/${id}`, {
+            const res = await fetch(`${API_URL}/api/valve/schedule/${id}`, {
                 method: 'DELETE'
             });
 

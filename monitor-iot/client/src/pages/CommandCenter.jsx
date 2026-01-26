@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config';
 import MetricCard from '../components/MetricCard';
 import Chart from '../components/Chart';
 import AlertsPanel from '../components/AlertsPanel';
@@ -18,7 +19,7 @@ function CommandCenter() {
 
   const fetchDashboard = async () => {
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await fetch(`${API_URL}/api/dashboard`);
       const json = await res.json();
       if (json.success) {
         // Normalizar estructura: aceptar array o objeto, distintos nombres de campo
@@ -124,7 +125,7 @@ function CommandCenter() {
   // Obtener promedio de ayer desde el servidor y calcular % de cambio frente al promedio actual
   async function fetchYesterdayAverage() {
     try {
-      const res = await fetch('/api/average-yesterday?mode=rolling24h');
+      const res = await fetch(`${API_URL}/api/average-yesterday?mode=rolling24h`);
       if (!res.ok) return null;
       const json = await res.json();
       if (json && json.success) return json; // devuelve objeto con average/previousAverage/etc
@@ -195,7 +196,7 @@ function CommandCenter() {
         <p>Cargando datos...</p>
       ) : (
         <>
-            <div className="metrics-grid">
+          <div className="metrics-grid">
             <MetricCard title="Valor Actual" value={`${metrics.averageFlow} L`} change={pctChange || 'N/A'} trend={pctTrend || 'neutral'} subtitle="vs ayer" tooltip={pctTooltip} invertTrend={true} />
             <MetricCard title="Nivel (L)" value={`${metrics.averageVolume} L`} change="-0.5%" trend="down" subtitle="Total acumulado (promedio)" />
             <MetricCard title="Alertas Críticas" value="5" change="+2" trend="up" subtitle="Activas" />
@@ -204,7 +205,7 @@ function CommandCenter() {
 
           <div className="dashboard-grid">
             <div className="chart-section">
-              <Chart elementId="dashboard-chart" data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length-1].value : metrics.averageFlow} L`} />
+              <Chart elementId="dashboard-chart" data={chartData} title="DINÁMICA NIVEL TANQUE" currentValue={`${chartData.length ? chartData[chartData.length - 1].value : metrics.averageFlow} L`} />
 
               <div className="bottom-metrics">
                 {enableWQ && <WaterQualityMetrics />}

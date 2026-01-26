@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config';
 import { FiAlertTriangle, FiAlertCircle, FiInfo, FiClock, FiActivity, FiX, FiRefreshCw } from 'react-icons/fi';
 import './Alerts.css';
 
@@ -12,7 +13,7 @@ function Alerts() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/dashboard');
+        const res = await fetch(`${API_URL}/api/dashboard`);
         const json = await res.json();
         if (json.success) {
           setSensors(json.data);

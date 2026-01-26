@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../config';
 import './AlertsPanel.css';
 import { FiAlertTriangle, FiBarChart2, FiCheckCircle, FiRadio } from 'react-icons/fi';
 
@@ -169,7 +170,7 @@ function AlertsPanel({ sensors }) {
             <div style={{ display: 'flex', gap: 8 }}>
                 <button className="view-all-button" onClick={async () => {
                     try {
-                        const res = await fetch('/api/generate-report');
+                        const res = await fetch(`${API_URL}/api/generate-report`);
                         if (!res.ok) throw new Error('Error generando reporte');
                         const blob = await res.blob();
                         const url = window.URL.createObjectURL(blob);
@@ -211,7 +212,7 @@ function AlertsPanel({ sensors }) {
                         const imgData = canvas.toDataURL('image/png');
 
                         // Obtener historial y metadatos
-                        const repRes = await fetch('/api/reports');
+                        const repRes = await fetch(`${API_URL}/api/reports`);
                         const repJson = await repRes.json();
                         const sensorsData = (repJson && repJson.data) ? repJson.data : {};
 
@@ -404,7 +405,7 @@ function AlertsPanel({ sensors }) {
                             const pdfBlobForServer = doc.output('blob');
                             console.log('[AlertsPanel] Subiendo PDF al servidor...');
                             try {
-                                const uploadRes = await fetch('/api/save-report', {
+                                const uploadRes = await fetch(`${API_URL}/api/save-report`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/pdf',

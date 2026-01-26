@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../config';
 import Chart from '../components/Chart';
 import { FiChevronLeft, FiChevronRight, FiDownload, FiFilter } from 'react-icons/fi';
 import html2canvas from 'html2canvas';
@@ -15,7 +16,7 @@ function Reports() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/reports');
+        const res = await fetch(`${API_URL}/api/reports`);
         const json = await res.json();
         if (json.success) {
           setReports(json.data || {});
