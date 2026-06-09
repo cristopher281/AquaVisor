@@ -19,7 +19,8 @@ function CommandCenter() {
 
   const fetchDashboard = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/dashboard`);
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/dashboard`);
       const json = await res.json();
       if (json.success) {
         // Normalizar estructura: aceptar array o objeto, distintos nombres de campo
